@@ -1,3 +1,79 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LIFF Form</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body{font-family:system-ui,Segoe UI,Tahoma;max-width:720px;margin:16px auto;padding:0 12px}
+    .card{border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0}
+    label{display:block;margin:10px 0 6px;font-weight:600}
+    input,button{width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:16px}
+    button{border:none;cursor:pointer}
+    .btn{background:#0b57d0;color:#fff;margin-top:10px}
+    .btn2{background:#111827;color:#fff;margin-top:10px}
+    .small{font-size:13px;color:#555}
+    .row{display:flex;gap:10px}
+    .row > div{flex:1}
+    img.preview{max-width:100%;border-radius:10px;margin-top:8px;border:1px solid #eee}
+    .ok{color:green;font-weight:700}
+    .err{color:#b91c1c;font-weight:700}
+  </style>
+</head>
+<body>
+  <h2>ส่งข้อมูลหน้างาน</h2>
+  <div class="small">แนบรูป 3 รูป + ดึงพิกัด + ใส่ชื่อโครงการ แล้วกดส่ง</div>
+
+  <div class="card">
+    <div><b>ผู้ส่ง:</b> <span id="who">กำลังโหลด...</span></div>
+    <div class="small" id="uid"></div>
+  </div>
+
+  <div class="card">
+    <label>ชื่อโครงการ</label>
+    <input id="projectName" placeholder="เช่น โครงการ ABC" />
+
+    <div class="row">
+      <div>
+        <label>ละติจูด</label>
+        <input id="lat" readonly placeholder="กดปุ่มดึงพิกัด" />
+      </div>
+      <div>
+        <label>ลองจิจูด</label>
+        <input id="lng" readonly placeholder="กดปุ่มดึงพิกัด" />
+      </div>
+    </div>
+    <button class="btn2" onclick="getLocation()">ดึงพิกัดปัจจุบัน</button>
+    <div class="small" id="locMsg"></div>
+  </div>
+
+  <div class="card">
+    <label>1) รูปหน้าบ้าน</label>
+    <input type="file" id="img1" accept="image/*" capture="environment" />
+    <img id="p1" class="preview" style="display:none" />
+
+    <label>2) รูปบ้านเลขที่</label>
+    <input type="file" id="img2" accept="image/*" capture="environment" />
+    <img id="p2" class="preview" style="display:none" />
+
+    <label>3) รูปป้ายประกาศ</label>
+    <input type="file" id="img3" accept="image/*" capture="environment" />
+    <img id="p3" class="preview" style="display:none" />
+
+    <button class="btn" onclick="submitForm()">ส่งข้อมูล</button>
+    <div id="result" class="small"></div>
+  </div>
+
+<script>
+  // ✅ ใส่ LIFF ID ของคุณที่นี่ (จะได้จาก LINE Developers)
+  const LIFF_ID = "2009152302-xTk3ZrjV";
+
+  // ✅ Web App URL (Backend) ของคุณ
+  const BACKEND_URL = "https://script.google.com/macros/s/AKfycby8gbWx0N_DAy_FO4sPyiXREl08LeqJSWBNxazJZupssyYC-JhRC3qzDn8I-t_jMb26/exec";
+
+  let profile = null;
+
 async function init() {
   const whoEl = document.getElementById("who");
   const uidEl = document.getElementById("uid");
@@ -30,3 +106,108 @@ async function init() {
     console.error(e);
   }
 }
+
+
+  function bindPreview(inputId, imgId){
+    const input = document.getElementById(inputId);
+    const img = document.getElementById(imgId);
+    input.addEventListener("change", () => {
+      if (!input.files || !input.files[0]) return;
+      const url = URL.createObjectURL(input.files[0]);
+      img.src = url;
+      img.style.display = "block";
+    });
+  }
+
+  function getLocation() {
+    const msg = document.getElementById("locMsg");
+    msg.textContent = "กำลังขอพิกัด...";
+    if (!navigator.geolocation) {
+      msg.innerHTML = `<span class="err">อุปกรณ์ไม่รองรับการดึงพิกัด</span>`;
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        document.getElementById("lat").value = pos.coords.latitude;
+        document.getElementById("lng").value = pos.coords.longitude;
+        msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว</span>`;
+      },
+      (err) => {
+        msg.innerHTML = `<span class="err">ดึงพิกัดไม่สำเร็จ: ${err.message}</span>`;
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+
+  function fileToDataUrl(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+async function submitForm() {
+  const result = document.getElementById("result");
+  result.textContent = "กำลังส่งข้อมูล...";
+
+  try {
+    // ✅ ย้ายมาไว้ใน try เพื่อให้ catch จับได้
+    if (!profile || !profile.userId) {
+      throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
+    }
+
+    const projectName = document.getElementById("projectName").value.trim();
+    const lat = document.getElementById("lat").value;
+    const lng = document.getElementById("lng").value;
+
+    const f1 = document.getElementById("img1").files[0];
+    const f2 = document.getElementById("img2").files[0];
+    const f3 = document.getElementById("img3").files[0];
+
+    if (!projectName) throw new Error("กรุณาใส่ชื่อโครงการ");
+    if (!lat || !lng) throw new Error("กรุณากดดึงพิกัดก่อน");
+    if (!f1 || !f2 || !f3) throw new Error("กรุณาแนบรูปให้ครบ 3 รูป");
+
+    const d1 = await fileToDataUrl(f1);
+    const d2 = await fileToDataUrl(f2);
+    const d3 = await fileToDataUrl(f3);
+
+    const payload = {
+      projectName,
+      latitude: Number(lat),
+      longitude: Number(lng),
+      lineUserId: profile.userId,
+      lineDisplayName: profile.displayName,
+      linePictureUrl: profile.pictureUrl || "",
+      images: [
+        { label: "front_house", dataUrl: d1 },
+        { label: "house_no", dataUrl: d2 },
+        { label: "notice_sign", dataUrl: d3 },
+      ]
+    };
+
+    const res = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
+
+    result.innerHTML = `<span class="ok">ส่งสำเร็จ!</span><br/>โฟลเดอร์: <a href="${json.folderUrl}" target="_blank">เปิดดูใน Drive</a>`;
+
+    // liff.closeWindow();
+
+  } catch (e) {
+    result.innerHTML = `<span class="err">${e.message || e}</span>`;
+  }
+}
+
+
+  init();
+</script>
+</body>
+</html>
