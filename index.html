@@ -188,11 +188,12 @@ async function submitForm() {
       ]
     };
 
-    const res = await fetch(BACKEND_URL, {
+      const res = await fetch(BACKEND_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload),  // ส่งเป็น string
+      // ❌ ไม่ต้องใส่ headers: { "Content-Type": "application/json" }
     });
+
 
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
