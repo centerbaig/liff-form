@@ -99,7 +99,8 @@ async function init() {
     profile = await liff.getProfile();
     whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
     uidEl.textContent = profile.userId || "";
-
+    // ✅ ดึงพิกัดอัตโนมัติ
+    getLocation();
   } catch (e) {
     whoEl.innerHTML = `<span class="err">LIFF error: ${e.message || e}</span>`;
     uidEl.textContent = "";
