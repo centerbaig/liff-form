@@ -26,13 +26,14 @@
       background:#fff;
     }
     label{display:block;margin:10px 0 6px;font-weight:600}
-    input,button{
+    input,button,select{
       width:100%;
       max-width:100%;
       padding:10px;
       border-radius:10px;
       border:1px solid #ccc;
       font-size:16px;
+      background:#fff;
     }
     button{border:none;cursor:pointer}
     button:disabled{opacity:.6;cursor:not-allowed}
@@ -79,7 +80,7 @@
 
 <body>
   <h2>ส่งข้อมูลหน้างาน</h2>
-  <div class="small">แนบรูป 3 รูป + ใส่ชื่อโครงการ แล้วกดส่ง</div>
+  <div class="small">แนบรูป (หน้าบ้าน + ป้ายประกาศ) • รูปบ้านเลขที่ไม่บังคับ • ดึงพิกัดอัตโนมัติ • แล้วกดส่ง</div>
 
   <div class="card">
     <div><b>ผู้ส่ง:</b> <span id="who">กำลังโหลด...</span></div>
@@ -88,8 +89,19 @@
   </div>
 
   <div class="card">
-    <label>ชื่อโครงการ/หมู่บ้าน (ถ้ามี)</label>
+    <label>ชื่อโครงการ (ไม่บังคับ)</label>
     <input id="projectName" placeholder="เช่น โครงการ ABC" />
+
+    <label>บ้านเลขที่ (พิมพ์เอง)</label>
+    <input id="houseText" placeholder="เช่น 223/1" />
+
+    <label>ประเภททรัพย์ <span class="err">*</span></label>
+    <select id="assetType" required>
+      <option value="">กรุณาระบุ</option>
+      <option value="บ้านเดี่ยว">บ้านเดี่ยว</option>
+      <option value="บ้านแฝด">บ้านแฝด</option>
+      <option value="ที่ดิน">ที่ดิน</option>
+    </select>
 
     <div class="row">
       <div>
@@ -107,15 +119,15 @@
   </div>
 
   <div class="card">
-    <label>1) รูปหน้าบ้าน</label>
+    <label>1) รูปหน้าบ้าน <span class="err">*</span></label>
     <input type="file" id="img1" accept="image/*" capture="environment" />
     <img id="p1" class="preview" />
 
-    <label>2) รูปบ้านเลขที่</label>
+    <label>2) รูปบ้านเลขที่ (ไม่บังคับ)</label>
     <input type="file" id="img2" accept="image/*" capture="environment" />
     <img id="p2" class="preview" />
 
-    <label>3) รูปป้ายประกาศ</label>
+    <label>3) รูปป้ายประกาศ <span class="err">*</span></label>
     <input type="file" id="img3" accept="image/*" capture="environment" />
     <img id="p3" class="preview" />
 
@@ -179,7 +191,7 @@
     const input = document.getElementById(inputId);
     const img = document.getElementById(imgId);
     input.addEventListener("change", () => {
-      if (!input.files || !input.files[0]) return;
+      if (!input.files || !input.files[0]) { img.style.display="none"; return; }
       const url = URL.createObjectURL(input.files[0]);
       img.src = url;
       img.style.display = "block";
@@ -235,34 +247,45 @@
       }
 
       const projectName = document.getElementById("projectName").value.trim() || "";
+      const houseText  = document.getElementById("houseText").value.trim() || "";
+      const assetType  = document.getElementById("assetType").value; // ต้องเลือก
+
       const lat = document.getElementById("lat").value;
       const lng = document.getElementById("lng").value;
 
-      const f1 = document.getElementById("img1").files[0];
-      const f2 = document.getElementById("img2").files[0];
-      const f3 = document.getElementById("img3").files[0];
+      const f1 = document.getElementById("img1").files[0]; // required
+      const f2 = document.getElementById("img2").files[0]; // optional
+      const f3 = document.getElementById("img3").files[0]; // required
 
+      if (!assetType) throw new Error("กรุณาเลือกประเภททรัพย์");
       if (!lat || !lng) throw new Error("กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
-      if (!f1 || !f2 || !f3) throw new Error("กรุณาแนบรูปให้ครบ 3 รูป");
+      if (!f1) throw new Error("กรุณาแนบรูปหน้าบ้าน");
+      if (!f3) throw new Error("กรุณาแนบรูปป้ายประกาศ");
 
-      const [d1, d2, d3] = await Promise.all([
-        fileToDataUrl(f1),
-        fileToDataUrl(f2),
-        fileToDataUrl(f3),
-      ]);
+      // แปลงรูปเป็น base64 (เฉพาะไฟล์ที่มี)
+      const d1 = await fileToDataUrl(f1);
+      const d3 = await fileToDataUrl(f3);
 
-      // ❗ ไม่ส่ง address จาก UI
+      const images = [
+        { label: "front_house", dataUrl: d1 },
+      ];
+
+      if (f2) {
+        const d2 = await fileToDataUrl(f2);
+        images.push({ label: "house_no", dataUrl: d2 });
+      }
+
+      images.push({ label: "notice_sign", dataUrl: d3 });
+
       const payload = {
         projectName,
+        houseText,
+        assetType,
         latitude: Number(lat),
         longitude: Number(lng),
         lineUserId: profile.userId,
         lineDisplayName: profile.displayName,
-        images: [
-          { label: "front_house", dataUrl: d1 },
-          { label: "house_no", dataUrl: d2 },
-          { label: "notice_sign", dataUrl: d3 },
-        ]
+        images
       };
 
       const res = await fetch(BACKEND_URL, {
