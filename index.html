@@ -169,6 +169,38 @@
         liff.login();
         return;
       }
+      function focusTo(el, msg) {
+  if (!el) return;
+  // เลื่อนให้อยู่กลางจอ
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  // โฟกัส/เปิดตัวเลือก
+  setTimeout(() => {
+    try { el.focus({ preventScroll: true }); } catch(e) { try { el.focus(); } catch(_){} }
+    // ถ้าเป็น select บางรุ่น focus แล้วไม่เปิดก็ไม่เป็นไร
+  }, 250);
+
+  // ไฮไลต์ขอบแดงชั่วคราว
+  const prev = el.style.borderColor;
+  el.style.borderColor = "#b91c1c";
+  el.style.boxShadow = "0 0 0 3px rgba(185,28,28,.15)";
+  setTimeout(() => {
+    el.style.borderColor = prev || "#ccc";
+    el.style.boxShadow = "";
+  }, 2500);
+
+  // ถ้ามีข้อความ error ก็แสดง
+  if (msg) {
+    const result = document.getElementById("result");
+    if (result) result.innerHTML = `<span class="err">${msg}</span>`;
+  }
+}
+
+function focusToFile(inputEl, msg) {
+  // file input บางเครื่อง focus ได้ แต่บางเครื่องไม่ได้ — อย่างน้อยเลื่อน+ไฮไลต์ได้
+  focusTo(inputEl, msg);
+}
+
 
       profile = await liff.getProfile();
       whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
