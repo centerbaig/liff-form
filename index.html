@@ -175,7 +175,8 @@ async function submitForm() {
     const f2 = document.getElementById("img2").files[0];
     const f3 = document.getElementById("img3").files[0];
 
-    if (!projectName) throw new Error("กรุณาใส่ชื่อโครงการ");
+    //if (!projectName) throw new Error("กรุณาใส่ชื่อโครงการ");
+    const projectName = document.getElementById("projectName").value.trim() || "";
     if (!lat || !lng) throw new Error("กรุณากดดึงพิกัดก่อน");
     if (!f1 || !f2 || !f3) throw new Error("กรุณาแนบรูปให้ครบ 3 รูป");
 
