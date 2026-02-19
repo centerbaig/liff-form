@@ -34,7 +34,6 @@
       border:1px solid #ccc;
       font-size:16px;
     }
-    textarea{min-height:72px;resize:vertical}
     button{border:none;cursor:pointer}
     button:disabled{opacity:.6;cursor:not-allowed}
     .btn{background:#0b57d0;color:#fff;margin-top:10px}
@@ -80,12 +79,12 @@
 
 <body>
   <h2>ส่งข้อมูลหน้างาน</h2>
-  <div class="small">แนบรูป 3 รูป + ดึงพิกัดอัตโนมัติ + แสดงที่อยู่ + ใส่ชื่อโครงการ (ไม่บังคับ) แล้วกดส่ง</div>
+  <div class="small">แนบรูป 3 รูป + ดึงพิกัดอัตโนมัติ + ใส่ชื่อโครงการ (ไม่บังคับ) แล้วกดส่ง</div>
 
   <div class="card">
     <div><b>ผู้ส่ง:</b> <span id="who">กำลังโหลด...</span></div>
     <!-- ซ่อน UserID จาก UI (แต่ยังส่งไป backend ได้) -->
-    <div class="small" id="uid" style="display:none"></div>
+    <div id="uid" style="display:none"></div>
   </div>
 
   <div class="card">
@@ -103,10 +102,7 @@
       </div>
     </div>
 
-    <label>ที่อยู่ (อัตโนมัติจากพิกัด)</label>
-    <textarea id="address" readonly placeholder="กำลังแปลงพิกัดเป็นที่อยู่..."></textarea>
-
-    <button class="btn2" type="button" onclick="getLocation()">ดึงพิกัด/ที่อยู่อีกครั้ง</button>
+    <button class="btn2" type="button" onclick="getLocation()">ดึงพิกัดอีกครั้ง</button>
     <div class="small" id="locMsg"></div>
   </div>
 
@@ -146,7 +142,6 @@
 
   async function init() {
     const whoEl = document.getElementById("who");
-    const uidEl = document.getElementById("uid");
 
     try {
       whoEl.textContent = "กำลังเริ่ม LIFF...";
@@ -165,13 +160,13 @@
 
       profile = await liff.getProfile();
       whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
-      uidEl.textContent = profile.userId || "";
+      document.getElementById("uid").textContent = profile.userId || "";
 
       bindPreview("img1","p1");
       bindPreview("img2","p2");
       bindPreview("img3","p3");
 
-      // ดึงพิกัด + ที่อยู่ อัตโนมัติ
+      // ดึงพิกัดอัตโนมัติ
       getLocation();
 
     } catch (e) {
@@ -191,19 +186,9 @@
     });
   }
 
-  async function reverseToAddress(lat, lng) {
-    // ใส่ t กัน cache
-    const url = `${BACKEND_URL}?action=reverse&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&t=${Date.now()}`;
-    const res = await fetch(url);
-    return await res.json();
-  }
-
   function getLocation() {
     const msg = document.getElementById("locMsg");
-    const addrEl = document.getElementById("address");
-
     msg.textContent = "กำลังขอพิกัด...";
-    addrEl.value = "";
 
     if (!navigator.geolocation) {
       msg.innerHTML = `<span class="err">อุปกรณ์/บราวเซอร์ไม่รองรับการดึงพิกัด</span>`;
@@ -211,27 +196,12 @@
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
+      (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-
         document.getElementById("lat").value = lat;
         document.getElementById("lng").value = lng;
-
-        msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว กำลังแปลงเป็นที่อยู่...</span>`;
-        addrEl.placeholder = "กำลังแปลงพิกัดเป็นที่อยู่...";
-
-        try {
-          const j = await reverseToAddress(lat, lng);
-          if (j.ok) {
-            addrEl.value = j.address || "";
-            msg.innerHTML = `<span class="ok">ได้พิกัดและที่อยู่แล้ว</span>`;
-          } else {
-            msg.innerHTML = `<span class="err">แปลงที่อยู่ไม่สำเร็จ: ${j.error || ""}</span>`;
-          }
-        } catch (e) {
-          msg.innerHTML = `<span class="err">เรียกบริการแปลงที่อยู่ไม่สำเร็จ</span>`;
-        }
+        msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว</span>`;
       },
       (err) => {
         let extra = "";
@@ -267,7 +237,6 @@
       const projectName = document.getElementById("projectName").value.trim() || "";
       const lat = document.getElementById("lat").value;
       const lng = document.getElementById("lng").value;
-      const address = document.getElementById("address").value || "";
 
       const f1 = document.getElementById("img1").files[0];
       const f2 = document.getElementById("img2").files[0];
@@ -286,7 +255,6 @@
         projectName,
         latitude: Number(lat),
         longitude: Number(lng),
-        address,
         lineUserId: profile.userId,
         lineDisplayName: profile.displayName,
         linePictureUrl: profile.pictureUrl || "",
@@ -297,7 +265,7 @@
         ]
       };
 
-      // สำคัญ: ไม่ใส่ headers Content-Type เพื่อเลี่ยง preflight
+      // ไม่ใส่ headers Content-Type เพื่อเลี่ยง preflight
       const res = await fetch(BACKEND_URL, {
         method: "POST",
         body: JSON.stringify(payload),
