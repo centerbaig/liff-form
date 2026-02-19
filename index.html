@@ -84,7 +84,6 @@
 
   <div class="card">
     <div><b>ผู้ส่ง:</b> <span id="who">กำลังโหลด...</span></div>
-    <!-- ซ่อน userId จาก UI (ยังส่งไป backend ได้) -->
     <div id="uid" style="display:none"></div>
   </div>
 
@@ -114,7 +113,7 @@
       </div>
     </div>
 
-    <button class="btn2" type="button" onclick="getLocation()">ดึงพิกัดอีกครั้ง</button>
+    <button class="btn2" id="locBtn" type="button" onclick="getLocation()">ดึงพิกัดอีกครั้ง</button>
     <div class="small" id="locMsg"></div>
   </div>
 
@@ -123,13 +122,13 @@
     <input type="file" id="img1" accept="image/*" capture="environment" />
     <img id="p1" class="preview" />
 
+    <label>2) รูปบ้านเลขที่ (ไม่บังคับ)</label>
+    <input type="file" id="img2" accept="image/*" capture="environment" />
+    <img id="p2" class="preview" />
+
     <label>3) รูปป้ายประกาศ <span class="err">*</span></label>
     <input type="file" id="img3" accept="image/*" capture="environment" />
     <img id="p3" class="preview" />
-
-    <label>2) รูปบ้านเลขที่ </label>
-    <input type="file" id="img2" accept="image/*" capture="environment" />
-    <img id="p2" class="preview" />
 
     <button class="btn" id="submitBtn" type="button" onclick="submitForm()">ส่งข้อมูล</button>
     <div id="result" class="small"></div>
@@ -152,6 +151,38 @@
 
   let profile = null;
 
+  // ✅ ต้องอยู่ "นอก init" เพื่อให้ submitForm เรียกได้
+  function focusTo(el, msg) {
+    if (!el) return;
+
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    setTimeout(() => {
+      try { el.focus({ preventScroll: true }); }
+      catch(e) { try { el.focus(); } catch(_){} }
+    }, 250);
+
+    const prevBorder = el.style.borderColor;
+    const prevShadow = el.style.boxShadow;
+
+    el.style.borderColor = "#b91c1c";
+    el.style.boxShadow = "0 0 0 3px rgba(185,28,28,.15)";
+
+    setTimeout(() => {
+      el.style.borderColor = prevBorder || "#ccc";
+      el.style.boxShadow = prevShadow || "";
+    }, 2500);
+
+    if (msg) {
+      const result = document.getElementById("result");
+      if (result) result.innerHTML = `<span class="err">${msg}</span>`;
+    }
+  }
+
+  function focusToFile(inputEl, msg) {
+    focusTo(inputEl, msg);
+  }
+
   async function init() {
     const whoEl = document.getElementById("who");
 
@@ -169,38 +200,6 @@
         liff.login();
         return;
       }
-  function focusTo(el, msg) {
-  if (!el) return;
-  // เลื่อนให้อยู่กลางจอ
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  // โฟกัส/เปิดตัวเลือก
-  setTimeout(() => {
-    try { el.focus({ preventScroll: true }); } catch(e) { try { el.focus(); } catch(_){} }
-    // ถ้าเป็น select บางรุ่น focus แล้วไม่เปิดก็ไม่เป็นไร
-  }, 250);
-
-  // ไฮไลต์ขอบแดงชั่วคราว
-  const prev = el.style.borderColor;
-  el.style.borderColor = "#b91c1c";
-  el.style.boxShadow = "0 0 0 3px rgba(185,28,28,.15)";
-  setTimeout(() => {
-    el.style.borderColor = prev || "#ccc";
-    el.style.boxShadow = "";
-  }, 2500);
-
-  // ถ้ามีข้อความ error ก็แสดง
-  if (msg) {
-    const result = document.getElementById("result");
-    if (result) result.innerHTML = `<span class="err">${msg}</span>`;
-  }
-}
-
-function focusToFile(inputEl, msg) {
-  // file input บางเครื่อง focus ได้ แต่บางเครื่องไม่ได้ — อย่างน้อยเลื่อน+ไฮไลต์ได้
-  focusTo(inputEl, msg);
-}
-
 
       profile = await liff.getProfile();
       whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
@@ -267,111 +266,100 @@ function focusToFile(inputEl, msg) {
     });
   }
 
-async function submitForm() {
-  const result = document.getElementById("result");
-  const btn = document.getElementById("submitBtn");
-  result.textContent = "กำลังส่งข้อมูล...";
-  btn.disabled = true;
+  async function submitForm() {
+    const result = document.getElementById("result");
+    const btn = document.getElementById("submitBtn");
+    result.textContent = "กำลังส่งข้อมูล...";
+    btn.disabled = true;
 
-  try {
-    if (!profile || !profile.userId) {
+    try {
+      if (!profile || !profile.userId) {
+        btn.disabled = false;
+        throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
+      }
+
+      const projectEl = document.getElementById("projectName");
+      const houseEl   = document.getElementById("houseText");
+      const typeEl    = document.getElementById("assetType");
+      const latEl     = document.getElementById("lat");
+      const lngEl     = document.getElementById("lng");
+
+      const img1El = document.getElementById("img1");
+      const img2El = document.getElementById("img2"); // optional
+      const img3El = document.getElementById("img3");
+
+      const assetType = typeEl.value;
+      const lat = latEl.value;
+      const lng = lngEl.value;
+
+      if (!assetType) {
+        btn.disabled = false;
+        focusTo(typeEl, "กรุณาเลือกประเภททรัพย์");
+        return;
+      }
+
+      if (!lat || !lng) {
+        btn.disabled = false;
+        focusTo(document.getElementById("locBtn"), "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
+        return;
+      }
+
+      const f1 = img1El.files[0];
+      if (!f1) {
+        btn.disabled = false;
+        focusToFile(img1El, "กรุณาแนบรูปหน้าบ้าน");
+        return;
+      }
+
+      const f2 = img2El.files[0] || null;
+
+      const f3 = img3El.files[0];
+      if (!f3) {
+        btn.disabled = false;
+        focusToFile(img3El, "กรุณาแนบรูปป้ายประกาศ");
+        return;
+      }
+
+      const projectName = projectEl.value.trim() || "";
+      const houseText   = houseEl.value.trim() || "";
+
+      const d1 = await fileToDataUrl(f1);
+      const d3 = await fileToDataUrl(f3);
+
+      const images = [{ label: "front_house", dataUrl: d1 }];
+      if (f2) {
+        const d2 = await fileToDataUrl(f2);
+        images.push({ label: "house_no", dataUrl: d2 });
+      }
+      images.push({ label: "notice_sign", dataUrl: d3 });
+
+      const payload = {
+        projectName,
+        houseText,
+        assetType,
+        latitude: Number(lat),
+        longitude: Number(lng),
+        lineUserId: profile.userId,
+        lineDisplayName: profile.displayName,
+        images
+      };
+
+      const res = await fetch(BACKEND_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
+
+      result.textContent = "";
+      showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
+
+    } catch (e) {
+      result.innerHTML = `<span class="err">${e.message || e}</span>`;
       btn.disabled = false;
-      throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
     }
-
-    const projectEl = document.getElementById("projectName");
-    const houseEl   = document.getElementById("houseText");
-    const typeEl    = document.getElementById("assetType");
-    const latEl     = document.getElementById("lat");
-    const lngEl     = document.getElementById("lng");
-
-    const img1El = document.getElementById("img1");
-    const img2El = document.getElementById("img2"); // optional
-    const img3El = document.getElementById("img3");
-
-    const assetType = typeEl.value;
-    const lat = latEl.value;
-    const lng = lngEl.value;
-
-    // ✅ บังคับ: ประเภททรัพย์
-    if (!assetType) {
-      btn.disabled = false;
-      focusTo(typeEl, "กรุณาเลือกประเภททรัพย์");
-      return;
-    }
-
-    // ✅ บังคับ: พิกัด
-    if (!lat || !lng) {
-      btn.disabled = false;
-      // เลื่อนไปที่ปุ่มดึงพิกัด (ถ้าคุณอยากให้วิ่งไปที่ปุ่ม)
-      const locBtn = document.querySelector('button.btn2[onclick="getLocation()"]');
-      if (locBtn) focusTo(locBtn, "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
-      else focusTo(latEl, "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
-      return;
-    }
-
-    // ✅ บังคับ: รูปหน้าบ้าน
-    const f1 = img1El.files[0];
-    if (!f1) {
-      btn.disabled = false;
-      focusToFile(img1El, "กรุณาแนบรูปหน้าบ้าน");
-      return;
-    }
-
-    // ✅ รูปบ้านเลขที่ optional
-    const f2 = img2El.files[0] || null;
-
-    // ✅ บังคับ: รูปป้ายประกาศ
-    const f3 = img3El.files[0];
-    if (!f3) {
-      btn.disabled = false;
-      focusToFile(img3El, "กรุณาแนบรูปป้ายประกาศ");
-      return;
-    }
-
-    // เก็บค่าที่ไม่บังคับ
-    const projectName = projectEl.value.trim() || "";
-    const houseText   = houseEl.value.trim() || "";
-
-    // แปลงรูปเป็น base64
-    const d1 = await fileToDataUrl(f1);
-    const d3 = await fileToDataUrl(f3);
-
-    const images = [{ label: "front_house", dataUrl: d1 }];
-    if (f2) {
-      const d2 = await fileToDataUrl(f2);
-      images.push({ label: "house_no", dataUrl: d2 });
-    }
-    images.push({ label: "notice_sign", dataUrl: d3 });
-
-    const payload = {
-      projectName,
-      houseText,
-      assetType,
-      latitude: Number(lat),
-      longitude: Number(lng),
-      lineUserId: profile.userId,
-      lineDisplayName: profile.displayName,
-      images
-    };
-
-    const res = await fetch(BACKEND_URL, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
-
-    result.textContent = "";
-    showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
-
-  } catch (e) {
-    result.innerHTML = `<span class="err">${e.message || e}</span>`;
-    btn.disabled = false;
   }
-}
-
 
   function showSuccessModal(message) {
     const modal = document.getElementById("successModal");
