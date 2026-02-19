@@ -208,7 +208,7 @@ async function submitForm() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
 
-    result.innerHTML = `<span class="ok">ส่งสำเร็จ!</span><br/>โฟลเดอร์: <a href="${json.folderUrl}" target="_blank">เปิดดูใน Drive</a>`;
+    result.innerHTML = `<span class="ok">ส่งสำเร็จ!</span>`;
 
     // liff.closeWindow();
 
