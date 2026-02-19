@@ -169,7 +169,7 @@
         liff.login();
         return;
       }
-      function focusTo(el, msg) {
+  function focusTo(el, msg) {
   if (!el) return;
   // เลื่อนให้อยู่กลางจอ
   el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -267,75 +267,111 @@ function focusToFile(inputEl, msg) {
     });
   }
 
-  async function submitForm() {
-    const result = document.getElementById("result");
-    const btn = document.getElementById("submitBtn");
-    result.textContent = "กำลังส่งข้อมูล...";
-    btn.disabled = true;
+async function submitForm() {
+  const result = document.getElementById("result");
+  const btn = document.getElementById("submitBtn");
+  result.textContent = "กำลังส่งข้อมูล...";
+  btn.disabled = true;
 
-    try {
-      if (!profile || !profile.userId) {
-        throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
-      }
-
-      const projectName = document.getElementById("projectName").value.trim() || "";
-      const houseText  = document.getElementById("houseText").value.trim() || "";
-      const assetType  = document.getElementById("assetType").value; // ต้องเลือก
-
-      const lat = document.getElementById("lat").value;
-      const lng = document.getElementById("lng").value;
-
-      const f1 = document.getElementById("img1").files[0]; // required
-      const f2 = document.getElementById("img2").files[0]; // optional
-      const f3 = document.getElementById("img3").files[0]; // required
-
-      if (!assetType) throw new Error("กรุณาเลือกประเภททรัพย์");
-      if (!lat || !lng) throw new Error("กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
-      if (!f1) throw new Error("กรุณาแนบรูปหน้าบ้าน");
-      if (!f3) throw new Error("กรุณาแนบรูปป้ายประกาศ");
-
-      // แปลงรูปเป็น base64 (เฉพาะไฟล์ที่มี)
-      const d1 = await fileToDataUrl(f1);
-      const d3 = await fileToDataUrl(f3);
-
-      const images = [
-        { label: "front_house", dataUrl: d1 },
-      ];
-
-      if (f2) {
-        const d2 = await fileToDataUrl(f2);
-        images.push({ label: "house_no", dataUrl: d2 });
-      }
-
-      images.push({ label: "notice_sign", dataUrl: d3 });
-
-      const payload = {
-        projectName,
-        houseText,
-        assetType,
-        latitude: Number(lat),
-        longitude: Number(lng),
-        lineUserId: profile.userId,
-        lineDisplayName: profile.displayName,
-        images
-      };
-
-      const res = await fetch(BACKEND_URL, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
-
-      result.textContent = "";
-      showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
-
-    } catch (e) {
-      result.innerHTML = `<span class="err">${e.message || e}</span>`;
+  try {
+    if (!profile || !profile.userId) {
       btn.disabled = false;
+      throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
     }
+
+    const projectEl = document.getElementById("projectName");
+    const houseEl   = document.getElementById("houseText");
+    const typeEl    = document.getElementById("assetType");
+    const latEl     = document.getElementById("lat");
+    const lngEl     = document.getElementById("lng");
+
+    const img1El = document.getElementById("img1");
+    const img2El = document.getElementById("img2"); // optional
+    const img3El = document.getElementById("img3");
+
+    const assetType = typeEl.value;
+    const lat = latEl.value;
+    const lng = lngEl.value;
+
+    // ✅ บังคับ: ประเภททรัพย์
+    if (!assetType) {
+      btn.disabled = false;
+      focusTo(typeEl, "กรุณาเลือกประเภททรัพย์");
+      return;
+    }
+
+    // ✅ บังคับ: พิกัด
+    if (!lat || !lng) {
+      btn.disabled = false;
+      // เลื่อนไปที่ปุ่มดึงพิกัด (ถ้าคุณอยากให้วิ่งไปที่ปุ่ม)
+      const locBtn = document.querySelector('button.btn2[onclick="getLocation()"]');
+      if (locBtn) focusTo(locBtn, "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
+      else focusTo(latEl, "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
+      return;
+    }
+
+    // ✅ บังคับ: รูปหน้าบ้าน
+    const f1 = img1El.files[0];
+    if (!f1) {
+      btn.disabled = false;
+      focusToFile(img1El, "กรุณาแนบรูปหน้าบ้าน");
+      return;
+    }
+
+    // ✅ รูปบ้านเลขที่ optional
+    const f2 = img2El.files[0] || null;
+
+    // ✅ บังคับ: รูปป้ายประกาศ
+    const f3 = img3El.files[0];
+    if (!f3) {
+      btn.disabled = false;
+      focusToFile(img3El, "กรุณาแนบรูปป้ายประกาศ");
+      return;
+    }
+
+    // เก็บค่าที่ไม่บังคับ
+    const projectName = projectEl.value.trim() || "";
+    const houseText   = houseEl.value.trim() || "";
+
+    // แปลงรูปเป็น base64
+    const d1 = await fileToDataUrl(f1);
+    const d3 = await fileToDataUrl(f3);
+
+    const images = [{ label: "front_house", dataUrl: d1 }];
+    if (f2) {
+      const d2 = await fileToDataUrl(f2);
+      images.push({ label: "house_no", dataUrl: d2 });
+    }
+    images.push({ label: "notice_sign", dataUrl: d3 });
+
+    const payload = {
+      projectName,
+      houseText,
+      assetType,
+      latitude: Number(lat),
+      longitude: Number(lng),
+      lineUserId: profile.userId,
+      lineDisplayName: profile.displayName,
+      images
+    };
+
+    const res = await fetch(BACKEND_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
+
+    result.textContent = "";
+    showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
+
+  } catch (e) {
+    result.innerHTML = `<span class="err">${e.message || e}</span>`;
+    btn.disabled = false;
   }
+}
+
 
   function showSuccessModal(message) {
     const modal = document.getElementById("successModal");
