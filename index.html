@@ -92,7 +92,7 @@
     <label>ชื่อโครงการ (ไม่บังคับ)</label>
     <input id="projectName" placeholder="เช่น โครงการ ABC" />
 
-    <label>บ้านเลขที่ (พิมพ์เอง)</label>
+    <label>บ้านเลขที่</label>
     <input id="houseText" placeholder="เช่น 223/1" />
 
     <label>ประเภททรัพย์ <span class="err">*</span></label>
@@ -123,13 +123,13 @@
     <input type="file" id="img1" accept="image/*" capture="environment" />
     <img id="p1" class="preview" />
 
-    <label>2) รูปบ้านเลขที่ (ไม่บังคับ)</label>
-    <input type="file" id="img2" accept="image/*" capture="environment" />
-    <img id="p2" class="preview" />
-
     <label>3) รูปป้ายประกาศ <span class="err">*</span></label>
     <input type="file" id="img3" accept="image/*" capture="environment" />
     <img id="p3" class="preview" />
+
+    <label>2) รูปบ้านเลขที่ </label>
+    <input type="file" id="img2" accept="image/*" capture="environment" />
+    <img id="p2" class="preview" />
 
     <button class="btn" id="submitBtn" type="button" onclick="submitForm()">ส่งข้อมูล</button>
     <div id="result" class="small"></div>
