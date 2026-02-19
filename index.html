@@ -26,7 +26,7 @@
       background:#fff;
     }
     label{display:block;margin:10px 0 6px;font-weight:600}
-    input,button,textarea{
+    input,button{
       width:100%;
       max-width:100%;
       padding:10px;
@@ -83,7 +83,7 @@
 
   <div class="card">
     <div><b>ผู้ส่ง:</b> <span id="who">กำลังโหลด...</span></div>
-    <!-- ซ่อน UserID จาก UI (แต่ยังส่งไป backend ได้) -->
+    <!-- ซ่อน userId จาก UI (ยังส่งไป backend ได้) -->
     <div id="uid" style="display:none"></div>
   </div>
 
@@ -251,6 +251,7 @@
         fileToDataUrl(f3),
       ]);
 
+      // ❗ ไม่ส่ง address จาก UI
       const payload = {
         projectName,
         latitude: Number(lat),
@@ -265,7 +266,6 @@
         ]
       };
 
-      // ไม่ใส่ headers Content-Type เพื่อเลี่ยง preflight
       const res = await fetch(BACKEND_URL, {
         method: "POST",
         body: JSON.stringify(payload),
