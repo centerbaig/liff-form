@@ -5,111 +5,182 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LIFF Form</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
-    body{font-family:system-ui,Segoe UI,Tahoma;max-width:720px;margin:16px auto;padding:0 12px}
-    .card{border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0}
+    *{box-sizing:border-box}
+    body{
+      font-family:system-ui,Segoe UI,Tahoma;
+      max-width:720px;
+      margin:16px auto;
+      padding:0 12px;
+      background:#fff;
+    }
+    h2{margin:0 0 6px}
+    .small{font-size:13px;color:#555;word-break:break-word}
+    .card{
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:14px;
+      margin:12px 0;
+      overflow:hidden;
+      background:#fff;
+    }
     label{display:block;margin:10px 0 6px;font-weight:600}
-    input,button{width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:16px}
+    input,button{
+      width:100%;
+      max-width:100%;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      font-size:16px;
+    }
     button{border:none;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
     .btn{background:#0b57d0;color:#fff;margin-top:10px}
     .btn2{background:#111827;color:#fff;margin-top:10px}
-    .small{font-size:13px;color:#555}
-    .row{display:flex;gap:10px}
-    .row > div{flex:1}
-    img.preview{max-width:100%;border-radius:10px;margin-top:8px;border:1px solid #eee}
+
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > div{flex:1;min-width:140px}
+
+    img.preview{
+      max-width:100%;
+      border-radius:10px;
+      margin-top:8px;
+      border:1px solid #eee;
+      display:none;
+    }
+
     .ok{color:green;font-weight:700}
     .err{color:#b91c1c;font-weight:700}
+
+    /* ✅ Popup modal */
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index:9999;
+    }
+    .modal{
+      width:min(420px, 100%);
+      background:#fff;
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
+    }
+    .modal h3{margin:0 0 6px;font-size:18px}
+    .modal p{margin:0 0 12px;color:#444}
+    .modal .actions{display:flex;gap:10px}
+    .modal .actions button{width:100%}
   </style>
 </head>
+
 <body>
   <h2>ส่งข้อมูลหน้างาน</h2>
-  <div class="small">แนบรูป 3 รูป + ดึงพิกัด + ใส่ชื่อโครงการ แล้วกดส่ง</div>
+  <div class="small">แนบรูป 3 รูป + ดึงพิกัด + ใส่ชื่อโครงการ (ไม่บังคับ) แล้วกดส่ง</div>
 
   <div class="card">
     <div><b>ผู้ส่ง:</b> <span id="who">กำลังโหลด...</span></div>
-    <div class="small" id="uid"></div>
+    <!-- ✅ ซ่อน UserID จาก UI (แต่ยังใช้ส่ง backend ได้) -->
+    <div class="small" id="uid" style="display:none"></div>
   </div>
 
   <div class="card">
-    <label>ชื่อโครงการ</label>
+    <label>ชื่อโครงการ (ไม่บังคับ)</label>
     <input id="projectName" placeholder="เช่น โครงการ ABC" />
 
     <div class="row">
       <div>
         <label>ละติจูด</label>
-        <input id="lat" readonly placeholder="กดปุ่มดึงพิกัด" />
+        <input id="lat" readonly placeholder="กำลังดึงพิกัด..." />
       </div>
       <div>
         <label>ลองจิจูด</label>
-        <input id="lng" readonly placeholder="กดปุ่มดึงพิกัด" />
+        <input id="lng" readonly placeholder="กำลังดึงพิกัด..." />
       </div>
     </div>
-    <button class="btn2" onclick="getLocation()">ดึงพิกัดปัจจุบัน</button>
+
+    <button class="btn2" type="button" onclick="getLocation()">ดึงพิกัดปัจจุบัน</button>
     <div class="small" id="locMsg"></div>
   </div>
 
   <div class="card">
     <label>1) รูปหน้าบ้าน</label>
     <input type="file" id="img1" accept="image/*" capture="environment" />
-    <img id="p1" class="preview" style="display:none" />
+    <img id="p1" class="preview" />
 
     <label>2) รูปบ้านเลขที่</label>
     <input type="file" id="img2" accept="image/*" capture="environment" />
-    <img id="p2" class="preview" style="display:none" />
+    <img id="p2" class="preview" />
 
     <label>3) รูปป้ายประกาศ</label>
     <input type="file" id="img3" accept="image/*" capture="environment" />
-    <img id="p3" class="preview" style="display:none" />
+    <img id="p3" class="preview" />
 
-    <button class="btn" onclick="submitForm()">ส่งข้อมูล</button>
+    <button class="btn" id="submitBtn" type="button" onclick="submitForm()">ส่งข้อมูล</button>
     <div id="result" class="small"></div>
   </div>
 
+  <!-- ✅ Success Popup (อยู่นอก script) -->
+  <div id="successModal" class="modal-backdrop">
+    <div class="modal">
+      <h3>ส่งข้อมูลสำเร็จ</h3>
+      <p id="successMsg">ระบบบันทึกข้อมูลเรียบร้อยแล้ว</p>
+      <div class="actions">
+        <button class="btn" type="button" onclick="closeLiff()">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
 <script>
-  // ✅ ใส่ LIFF ID ของคุณที่นี่ (จะได้จาก LINE Developers)
+  // ✅ LIFF ID
   const LIFF_ID = "2009152302-xTk3ZrjV";
 
-  // ✅ Web App URL (Backend) ของคุณ
+  // ✅ Web App URL (GAS)
   const BACKEND_URL = "https://script.google.com/macros/s/AKfycby8gbWx0N_DAy_FO4sPyiXREl08LeqJSWBNxazJZupssyYC-JhRC3qzDn8I-t_jMb26/exec";
 
   let profile = null;
 
-async function init() {
-  const whoEl = document.getElementById("who");
-  const uidEl = document.getElementById("uid");
+  async function init() {
+    const whoEl = document.getElementById("who");
+    const uidEl = document.getElementById("uid");
 
-  try {
-    whoEl.textContent = "กำลังเริ่ม LIFF...";
+    try {
+      whoEl.textContent = "กำลังเริ่ม LIFF...";
+      await liff.init({ liffId: LIFF_ID });
 
-    await liff.init({ liffId: LIFF_ID });
+      if (!liff.isInClient()) {
+        whoEl.innerHTML = `<span class="err">ลิงก์นี้ต้องเปิดใน LINE เท่านั้น</span>`;
+        return;
+      }
 
-    // ✅ ถ้าเปิดจากคอม/บราวเซอร์ปกติ จะไม่ใช่ LIFF context
-    if (!liff.isInClient()) {
-      whoEl.innerHTML = `<span class="err">ลิงก์นี้ต้องเปิดใน LINE เท่านั้น (เปิดจากคอมจะไม่ดึงโปรไฟล์)</span>`;
-      uidEl.textContent = "";
-      return;
+      if (!liff.isLoggedIn()) {
+        whoEl.textContent = "กำลังเข้าสู่ระบบ LINE...";
+        liff.login();
+        return;
+      }
+
+      profile = await liff.getProfile();
+      whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
+      uidEl.textContent = profile.userId || "";
+
+      // ✅ preview รูป
+      bindPreview("img1","p1");
+      bindPreview("img2","p2");
+      bindPreview("img3","p3");
+
+      // ✅ ดึงพิกัดอัตโนมัติ
+      getLocation();
+
+    } catch (e) {
+      whoEl.innerHTML = `<span class="err">LIFF error: ${e.message || e}</span>`;
+      console.error(e);
     }
-
-    if (!liff.isLoggedIn()) {
-      whoEl.textContent = "กำลังเข้าสู่ระบบ LINE...";
-      liff.login();
-      return;
-    }
-
-    profile = await liff.getProfile();
-    whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
-    uidEl.textContent = profile.userId || "";
-    // ✅ ดึงพิกัดอัตโนมัติ
-    getLocation();
-  } catch (e) {
-    whoEl.innerHTML = `<span class="err">LIFF error: ${e.message || e}</span>`;
-    uidEl.textContent = "";
-    console.error(e);
   }
-}
 
-
-  function bindPreview(inputId, imgId){
+  function bindPreview(inputId, imgId) {
     const input = document.getElementById(inputId);
     const img = document.getElementById(imgId);
     input.addEventListener("change", () => {
@@ -120,36 +191,33 @@ async function init() {
     });
   }
 
-function getLocation() {
-  const msg = document.getElementById("locMsg");
-  if (!msg) return; // กันกรณีลืมใส่ locMsg
+  function getLocation() {
+    const msg = document.getElementById("locMsg");
+    msg.textContent = "กำลังขอพิกัด...";
 
-  msg.textContent = "กำลังขอพิกัด...";
+    if (!navigator.geolocation) {
+      msg.innerHTML = `<span class="err">อุปกรณ์/บราวเซอร์ไม่รองรับการดึงพิกัด</span>`;
+      return;
+    }
 
-  if (!navigator.geolocation) {
-    msg.innerHTML = `<span class="err">อุปกรณ์/บราวเซอร์ไม่รองรับการดึงพิกัด</span>`;
-    return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        document.getElementById("lat").value = pos.coords.latitude;
+        document.getElementById("lng").value = pos.coords.longitude;
+        msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว</span>`;
+      },
+      (err) => {
+        let extra = "";
+        if (err.code === 1) extra = " (ไม่ได้อนุญาต Location ให้ LINE/เว็บนี้)";
+        if (err.code === 2) extra = " (หาสัญญาณ GPS ไม่เจอ ลองออกไปที่โล่ง/เปิด GPS)";
+        if (err.code === 3) extra = " (Timeout ลองใหม่อีกครั้ง)";
+        msg.innerHTML = `<span class="err">ดึงพิกัดไม่สำเร็จ: ${err.message}${extra}</span>`;
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+    );
   }
 
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      document.getElementById("lat").value = pos.coords.latitude;
-      document.getElementById("lng").value = pos.coords.longitude;
-      msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว</span>`;
-    },
-    (err) => {
-      let extra = "";
-      if (err.code === 1) extra = " (ไม่ได้อนุญาต Location ให้ LINE/เว็บนี้)";
-      if (err.code === 2) extra = " (หาสัญญาณ GPS ไม่เจอ ลองออกไปที่โล่ง/เปิด GPS)";
-      if (err.code === 3) extra = " (Timeout ลองใหม่อีกครั้ง)";
-      msg.innerHTML = `<span class="err">ดึงพิกัดไม่สำเร็จ: ${err.message}${extra}</span>`;
-    },
-    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
-  );
-}
-
-
-  function fileToDataUrl(file){
+  function fileToDataUrl(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -158,66 +226,80 @@ function getLocation() {
     });
   }
 
-async function submitForm() {
-  const result = document.getElementById("result");
-  result.textContent = "กำลังส่งข้อมูล...";
+  async function submitForm() {
+    const result = document.getElementById("result");
+    const btn = document.getElementById("submitBtn");
 
-  try {
-    // ✅ ย้ายมาไว้ใน try เพื่อให้ catch จับได้
-    if (!profile || !profile.userId) {
-      throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
-    }
+    result.textContent = "กำลังส่งข้อมูล...";
+    btn.disabled = true;
 
-    //const projectName = document.getElementById("projectName").value.trim();
-    const lat = document.getElementById("lat").value;
-    const lng = document.getElementById("lng").value;
+    try {
+      if (!profile || !profile.userId) {
+        throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
+      }
 
-    const f1 = document.getElementById("img1").files[0];
-    const f2 = document.getElementById("img2").files[0];
-    const f3 = document.getElementById("img3").files[0];
+      const projectName = document.getElementById("projectName").value.trim() || "";
+      const lat = document.getElementById("lat").value;
+      const lng = document.getElementById("lng").value;
 
-    //if (!projectName) throw new Error("กรุณาใส่ชื่อโครงการ");
-    const projectName = document.getElementById("projectName").value.trim() || "";
-    if (!lat || !lng) throw new Error("กรุณากดดึงพิกัดก่อน");
-    if (!f1 || !f2 || !f3) throw new Error("กรุณาแนบรูปให้ครบ 3 รูป");
+      const f1 = document.getElementById("img1").files[0];
+      const f2 = document.getElementById("img2").files[0];
+      const f3 = document.getElementById("img3").files[0];
 
-    const d1 = await fileToDataUrl(f1);
-    const d2 = await fileToDataUrl(f2);
-    const d3 = await fileToDataUrl(f3);
+      if (!lat || !lng) throw new Error("กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
+      if (!f1 || !f2 || !f3) throw new Error("กรุณาแนบรูปให้ครบ 3 รูป");
 
-    const payload = {
-      projectName,
-      latitude: Number(lat),
-      longitude: Number(lng),
-      lineUserId: profile.userId,
-      lineDisplayName: profile.displayName,
-      linePictureUrl: profile.pictureUrl || "",
-      images: [
-        { label: "front_house", dataUrl: d1 },
-        { label: "house_no", dataUrl: d2 },
-        { label: "notice_sign", dataUrl: d3 },
-      ]
-    };
+      const [d1, d2, d3] = await Promise.all([
+        fileToDataUrl(f1),
+        fileToDataUrl(f2),
+        fileToDataUrl(f3),
+      ]);
+
+      const payload = {
+        projectName,
+        latitude: Number(lat),
+        longitude: Number(lng),
+        lineUserId: profile.userId,
+        lineDisplayName: profile.displayName,
+        linePictureUrl: profile.pictureUrl || "",
+        images: [
+          { label: "front_house", dataUrl: d1 },
+          { label: "house_no", dataUrl: d2 },
+          { label: "notice_sign", dataUrl: d3 },
+        ]
+      };
 
       const res = await fetch(BACKEND_URL, {
-      method: "POST",
-      body: JSON.stringify(payload),  // ส่งเป็น string
-      // ❌ ไม่ต้องใส่ headers: { "Content-Type": "application/json" }
-    });
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
 
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
 
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
+      result.textContent = "";
+      showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
 
-    result.innerHTML = `<span class="ok">ส่งสำเร็จ!</span>`;
-
-    // liff.closeWindow();
-
-  } catch (e) {
-    result.innerHTML = `<span class="err">${e.message || e}</span>`;
+    } catch (e) {
+      result.innerHTML = `<span class="err">${e.message || e}</span>`;
+      btn.disabled = false;
+    }
   }
-}
 
+  function showSuccessModal(message) {
+    const modal = document.getElementById("successModal");
+    const msgEl = document.getElementById("successMsg");
+    msgEl.textContent = message || "ระบบบันทึกข้อมูลเรียบร้อยแล้ว";
+    modal.style.display = "flex";
+  }
+
+  function closeLiff() {
+    if (typeof liff !== "undefined" && liff.isInClient && liff.isInClient()) {
+      liff.closeWindow();
+    } else {
+      window.close();
+    }
+  }
 
   init();
 </script>
