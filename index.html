@@ -194,16 +194,20 @@
 
 <script>
   const LIFF_ID = "2009152302-xTk3ZrjV";
-  const BACKEND_URL = "https://script.google.com/macros/s/AKfycby8gbWx0N_DAy_FO4sPyiXREl08LeqJSWBNxazJZupssyYC-JhRC3qzDn8I-t_jMb26/exec";
 
-  // ✅ resize config
-  const MAX_SIDE = 1024;     // ตามที่คุณขอ
-  const JPEG_QUALITY = 0.72; // ลดนิดนึงให้ไวขึ้น (ปรับได้)
+  // ✅ สำคัญมาก: ใส่ Web App URL "ตัวล่าสุด" ที่คุณเปิดแล้วขึ้น OK
+  // ตัวอย่างรูปแบบจะประมาณนี้:
+  // https://script.googleusercontent.com/a/macros/your-domain.com/echo?user_content_key=...
+  const BACKEND_URL = "PUT_YOUR_LATEST_WEBAPP_URL_HERE";
+
+  // ✅ resize config (ตามที่คุณขอ)
+  const MAX_SIDE = 1024;
+  const JPEG_QUALITY = 0.75;
 
   let profile = null;
 
   let fileFront = null;
-  let fileHouseNo = null; // optional
+  let fileHouseNo = null;
   let fileSign = null;
 
   function showSending(show=true, msg="กำลังส่งข้อมูลไปยังระบบ...", pct=0){
@@ -215,8 +219,8 @@
     msgEl.textContent = msg;
 
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
-    pctEl.textContent = `${Math.round(p)}%`;
-    fill.style.width = `${p}%`;
+    if (pctEl) pctEl.textContent = `${Math.round(p)}%`;
+    if (fill) fill.style.width = `${p}%`;
 
     modal.style.display = show ? "flex" : "none";
   }
@@ -265,7 +269,8 @@
       const f = input.files[0];
       setFile(f);
 
-      img.src = URL.createObjectURL(f);
+      const url = URL.createObjectURL(f);
+      img.src = url;
       img.style.display = "block";
 
       if (input === cam) lib.value = "";
@@ -297,8 +302,10 @@
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        document.getElementById("lat").value = pos.coords.latitude;
-        document.getElementById("lng").value = pos.coords.longitude;
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        document.getElementById("lat").value = lat;
+        document.getElementById("lng").value = lng;
         msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว</span>`;
       },
       (err) => {
@@ -321,20 +328,21 @@
     });
   }
 
-  // ✅ resize/compress เป็น JPEG (maxSide=1024)
-  async function fileToJpegDataUrlResized(file, maxSide=1024, quality=0.72){
-    const src = await fileToDataUrl(file);
+  async function fileToJpegDataUrlResized(file, maxSide=1024, quality=0.75){
+    const dataUrl = await fileToDataUrl(file);
 
     const img = await new Promise((resolve, reject) => {
       const im = new Image();
       im.onload = () => resolve(im);
       im.onerror = reject;
-      im.src = src;
+      im.src = dataUrl;
     });
 
-    let w = img.width, h = img.height;
+    let w = img.width;
+    let h = img.height;
+
     const longer = Math.max(w, h);
-    if (longer > maxSide){
+    if (longer > maxSide) {
       const scale = maxSide / longer;
       w = Math.round(w * scale);
       h = Math.round(h * scale);
@@ -347,42 +355,40 @@
     const ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0, w, h);
 
-    // บังคับเป็น jpeg เสมอ
     return canvas.toDataURL("image/jpeg", quality);
   }
 
-  // ✅ POST + progress จริง + ตรวจ status
+  // ✅ ปรับให้ debug ได้ชัด: ถ้า status ไม่ 200 จะ reject พร้อม response
   function postJsonWithProgress(url, payload, onPct){
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url, true);
-
-      // กันค้าง (ปรับได้)
-      xhr.timeout = 60000;
+      xhr.timeout = 120000; // 120s กันรูปใหญ่/เน็ตช้า
+      xhr.responseType = "text";
 
       xhr.upload.onprogress = (evt) => {
         if (!evt.lengthComputable) return;
         const pct = (evt.loaded / evt.total) * 100;
-        onPct?.(pct);
+        if (typeof onPct === "function") onPct(pct);
       };
 
       xhr.onload = () => {
-        // ถ้าไม่ใช่ 200 ให้ถือว่า error
-        if (xhr.status < 200 || xhr.status >= 300) {
-          reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText || "Request failed"}`));
-          return;
+        // ถ้าไม่ใช่ 2xx/3xx ให้เห็นชัด ๆ
+        if (xhr.status < 200 || xhr.status >= 400) {
+          return reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText || "(no body)"}`));
         }
         try {
-          resolve(JSON.parse(xhr.responseText || "{}"));
+          const json = JSON.parse(xhr.responseText || "{}");
+          resolve(json);
         } catch (e) {
           reject(new Error("Response is not JSON"));
         }
       };
 
       xhr.ontimeout = () => reject(new Error("Request timeout"));
-      xhr.onerror = () => reject(new Error("Network error"));
+      xhr.onerror = () => reject(new Error("Network error (อาจเป็น URL ไม่ตรง deploy ล่าสุด หรือโดน redirect/cors)"));
 
-      // ❗ ไม่ตั้ง Content-Type เพื่อเลี่ยง preflight (คงแบบที่คุณทำไว้)
+      // ไม่ใส่ Content-Type เพื่อลดโอกาส preflight
       xhr.send(JSON.stringify(payload));
     });
   }
@@ -409,6 +415,7 @@
       document.getElementById("uid").textContent = profile.userId || "";
 
       setupPickButtons();
+
       bindDualPicker("img1_cam","img1_lib","p1",(f)=>fileFront=f);
       bindDualPicker("img2_cam","img2_lib","p2",(f)=>fileHouseNo=f);
       bindDualPicker("img3_cam","img3_lib","p3",(f)=>fileSign=f);
@@ -453,6 +460,7 @@
         focusTo(document.getElementById("locBtn"), "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
         return;
       }
+
       if (!fileFront){
         btn.disabled = false;
         focusTo(document.getElementById("btn1cam"), "กรุณาแนบรูปหน้าบ้าน");
@@ -469,10 +477,10 @@
       const projectName = projectEl.value.trim() || "";
       const houseText   = houseEl.value.trim() || "";
 
-      // เตรียมรูป (0–60)
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 5);
 
       const images = [];
+
       const d1 = await fileToJpegDataUrlResized(fileFront, MAX_SIDE, JPEG_QUALITY);
       images.push({ label:"front_house", dataUrl:d1 });
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 25);
@@ -498,7 +506,6 @@
         images
       };
 
-      // ส่งจริง (60–95)
       const json = await postJsonWithProgress(BACKEND_URL, payload, (uploadPct) => {
         const pct = 60 + (uploadPct * 0.35);
         showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", pct);
