@@ -18,8 +18,7 @@
     label{display:block;margin:10px 0 6px;font-weight:600}
     input,button,select{
       width:100%;max-width:100%;
-      padding:10px;border-radius:10px;border:1px solid #ccc;
-      font-size:16px;background:#fff;
+      padding:10px;border-radius:10px;border:1px solid #ccc;font-size:16px;background:#fff
     }
     button{border:none;cursor:pointer}
     button:disabled{opacity:.6;cursor:not-allowed}
@@ -31,15 +30,20 @@
     .ok{color:green;font-weight:700}
     .err{color:#b91c1c;font-weight:700}
 
+    /* Progress */
+    .progress-wrap{margin-top:10px;display:none}
+    .progress-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .progress-top span{font-size:13px;color:#444}
+    progress{width:100%;height:14px}
+
     /* Popup modal */
     .modal-backdrop{
       position:fixed; inset:0;background:rgba(0,0,0,.45);
-      display:none;align-items:center;justify-content:center;
-      padding:16px;z-index:9999;
+      display:none;align-items:center;justify-content:center;padding:16px;z-index:9999;
     }
     .modal{
-      width:min(420px, 100%);background:#fff;border-radius:16px;
-      padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+      width:min(420px, 100%);background:#fff;border-radius:16px;padding:16px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
     }
     .modal h3{margin:0 0 6px;font-size:18px}
     .modal p{margin:0 0 12px;color:#444}
@@ -51,12 +55,11 @@
 <body>
   <h2>ส่งข้อมูลหน้างาน</h2>
   <div class="small">
-    แนบรูป (หน้าบ้าน + ป้ายประกาศ) • รูปบ้านเลขที่ไม่บังคับ • ดึงพิกัดอัตโนมัติ • แล้วกดส่ง
+    แนบรูป (หน้าบ้าน + ป้ายประกาศ) • รูปบ้านเลขที่ไม่บังคับ • ลดขนาดรูปอัตโนมัติ • ดึงพิกัดอัตโนมัติ • แล้วกดส่ง
   </div>
 
   <div class="card">
     <div><b>ผู้ส่ง:</b> <span id="who">กำลังโหลด...</span></div>
-    <!-- ซ่อน userId จาก UI (ยังส่งไป backend ได้) -->
     <div id="uid" style="display:none"></div>
   </div>
 
@@ -64,11 +67,14 @@
     <label>ชื่อโครงการ (ไม่บังคับ)</label>
     <input id="projectName" placeholder="เช่น โครงการ ABC" />
 
-    <label>บ้านเลขที่ (พิมพ์) (ไม่บังคับ)</label>
+    <label>บ้านเลขที่ (ไม่บังคับ)</label>
     <input id="houseText" placeholder="เช่น 223/1" />
 
+    <label>ถนน (ไม่บังคับ)</label>
+    <input id="road" placeholder="เช่น ถนนราชพฤกษ์" />
+
     <label>ประเภททรัพย์ <span class="err">*</span></label>
-    <select id="assetType" required>
+    <select id="assetType">
       <option value="">กรุณาระบุ</option>
       <option value="บ้านเดี่ยว">บ้านเดี่ยว</option>
       <option value="บ้านแฝด">บ้านแฝด</option>
@@ -86,7 +92,7 @@
       </div>
     </div>
 
-    <button class="btn2" type="button" id="locBtn" onclick="getLocation()">ดึงพิกัดอีกครั้ง</button>
+    <button class="btn2" type="button" onclick="getLocation()">ดึงพิกัดอีกครั้ง</button>
     <div class="small" id="locMsg"></div>
   </div>
 
@@ -105,6 +111,14 @@
 
     <button class="btn" id="submitBtn" type="button" onclick="submitForm()">ส่งข้อมูล</button>
     <div id="result" class="small"></div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-top">
+        <span id="progressText">กำลังเตรียมข้อมูล...</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <progress id="progressBar" value="0" max="100"></progress>
+    </div>
   </div>
 
   <!-- Success Popup -->
@@ -124,14 +138,11 @@
 
   let profile = null;
 
+  // ---------- UX helpers ----------
   function focusTo(el, msg) {
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
-
-    setTimeout(() => {
-      try { el.focus({ preventScroll: true }); }
-      catch(e) { try { el.focus(); } catch(_){} }
-    }, 250);
+    setTimeout(() => { try { el.focus({ preventScroll:true }); } catch(e) { try{el.focus();}catch(_){}} }, 200);
 
     const prev = el.style.borderColor;
     el.style.borderColor = "#b91c1c";
@@ -139,53 +150,28 @@
     setTimeout(() => {
       el.style.borderColor = prev || "#ccc";
       el.style.boxShadow = "";
-    }, 2500);
+    }, 1800);
 
     if (msg) {
       const result = document.getElementById("result");
       if (result) result.innerHTML = `<span class="err">${msg}</span>`;
     }
   }
+  function focusToFile(inputEl, msg){ focusTo(inputEl, msg); }
 
-  function focusToFile(inputEl, msg) {
-    focusTo(inputEl, msg);
+  function setProgress(on, pct = 0, text = "") {
+    const wrap = document.getElementById("progressWrap");
+    const bar = document.getElementById("progressBar");
+    const t = document.getElementById("progressText");
+    const p = document.getElementById("progressPct");
+    wrap.style.display = on ? "block" : "none";
+    if (!on) return;
+    bar.value = Math.max(0, Math.min(100, pct));
+    p.textContent = `${Math.round(bar.value)}%`;
+    if (text) t.textContent = text;
   }
 
-  async function init() {
-    const whoEl = document.getElementById("who");
-
-    try {
-      whoEl.textContent = "กำลังเริ่ม LIFF...";
-      await liff.init({ liffId: LIFF_ID });
-
-      if (!liff.isInClient()) {
-        whoEl.innerHTML = `<span class="err">ลิงก์นี้ต้องเปิดใน LINE เท่านั้น</span>`;
-        return;
-      }
-
-      if (!liff.isLoggedIn()) {
-        whoEl.textContent = "กำลังเข้าสู่ระบบ LINE...";
-        liff.login();
-        return;
-      }
-
-      profile = await liff.getProfile();
-      whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
-      document.getElementById("uid").textContent = profile.userId || "";
-
-      bindPreview("img1","p1");
-      bindPreview("img2","p2");
-      bindPreview("img3","p3");
-
-      // ดึงพิกัดอัตโนมัติ
-      getLocation();
-
-    } catch (e) {
-      whoEl.innerHTML = `<span class="err">LIFF error: ${e.message || e}</span>`;
-      console.error(e);
-    }
-  }
-
+  // ---------- Preview ----------
   function bindPreview(inputId, imgId) {
     const input = document.getElementById(inputId);
     const img = document.getElementById(imgId);
@@ -197,6 +183,7 @@
     });
   }
 
+  // ---------- Location ----------
   function getLocation() {
     const msg = document.getElementById("locMsg");
     msg.textContent = "กำลังขอพิกัด...";
@@ -223,106 +210,146 @@
     );
   }
 
-  function fileToDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  // ---------- Image resize/compress ----------
+  async function resizeImageToDataUrl(file, maxSide = 1280, quality = 0.75) {
+    // ลดขนาด/บีบอัด -> JPEG (เร็วขึ้นมาก)
+    const bitmap = await createImageBitmap(file);
+    let { width, height } = bitmap;
+
+    const scale = Math.min(1, maxSide / Math.max(width, height));
+    const nw = Math.round(width * scale);
+    const nh = Math.round(height * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = nw; canvas.height = nh;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, nw, nh);
+
+    // แปลงเป็น JPEG
+    return canvas.toDataURL("image/jpeg", quality);
   }
 
+  // ---------- Submit ----------
   async function submitForm() {
     const result = document.getElementById("result");
     const btn = document.getElementById("submitBtn");
-    result.textContent = "กำลังส่งข้อมูล...";
+    result.textContent = "";
     btn.disabled = true;
+    setProgress(true, 0, "กำลังตรวจสอบข้อมูล...");
 
     try {
       if (!profile || !profile.userId) {
         btn.disabled = false;
+        setProgress(false);
         throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
       }
 
       const projectEl = document.getElementById("projectName");
-      const houseEl   = document.getElementById("houseText");
-      const typeEl    = document.getElementById("assetType");
-      const latEl     = document.getElementById("lat");
-      const lngEl     = document.getElementById("lng");
+      const houseEl = document.getElementById("houseText");
+      const roadEl = document.getElementById("road");
+      const typeEl = document.getElementById("assetType");
+      const latEl = document.getElementById("lat");
+      const lngEl = document.getElementById("lng");
 
       const img1El = document.getElementById("img1");
       const img2El = document.getElementById("img2"); // optional
       const img3El = document.getElementById("img3");
 
-      const assetType = typeEl.value;
-      const lat = latEl.value;
-      const lng = lngEl.value;
-
-      if (!assetType) {
+      // required: assetType
+      if (!typeEl.value) {
         btn.disabled = false;
+        setProgress(false);
         focusTo(typeEl, "กรุณาเลือกประเภททรัพย์");
         return;
       }
 
-      if (!lat || !lng) {
+      // required: lat/lng
+      if (!latEl.value || !lngEl.value) {
         btn.disabled = false;
-        focusTo(document.getElementById("locBtn"), "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
+        setProgress(false);
+        const locBtn = document.querySelector('button.btn2');
+        focusTo(locBtn || latEl, "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
         return;
       }
 
+      // required: img1, img3
       const f1 = img1El.files[0];
       if (!f1) {
         btn.disabled = false;
+        setProgress(false);
         focusToFile(img1El, "กรุณาแนบรูปหน้าบ้าน");
         return;
       }
-
       const f3 = img3El.files[0];
       if (!f3) {
         btn.disabled = false;
+        setProgress(false);
         focusToFile(img3El, "กรุณาแนบรูปป้ายประกาศ");
         return;
       }
 
       const f2 = img2El.files[0] || null;
 
-      const projectName = projectEl.value.trim() || "";
-      const houseText   = houseEl.value.trim() || "";
-
+      // Step: resize
+      setProgress(true, 10, "กำลังลดขนาดรูปภาพ...");
       const images = [];
-      images.push({ label: "front_house", dataUrl: await fileToDataUrl(f1) });
-      if (f2) images.push({ label: "house_no", dataUrl: await fileToDataUrl(f2) });
-      images.push({ label: "notice_sign", dataUrl: await fileToDataUrl(f3) });
+
+      // ทำเป็นขั้น ๆ ให้เห็น progress
+      const d1 = await resizeImageToDataUrl(f1, 1280, 0.75);
+      setProgress(true, 35, "กำลังเตรียมรูปภาพ (1/3)...");
+      images.push({ label: "front_house", dataUrl: d1 });
+
+      if (f2) {
+        const d2 = await resizeImageToDataUrl(f2, 1280, 0.75);
+        setProgress(true, 55, "กำลังเตรียมรูปภาพ (2/3)...");
+        images.push({ label: "house_no", dataUrl: d2 });
+      } else {
+        setProgress(true, 55, "กำลังเตรียมรูปภาพ (ข้ามรูปบ้านเลขที่)...");
+      }
+
+      const d3 = await resizeImageToDataUrl(f3, 1280, 0.75);
+      setProgress(true, 75, "กำลังเตรียมรูปภาพ (3/3)...");
+      images.push({ label: "notice_sign", dataUrl: d3 });
+
+      // Step: send
+      setProgress(true, 85, "กำลังส่งข้อมูลไปยังระบบ...");
 
       const payload = {
-        projectName,
-        houseText,
-        assetType,
-        latitude: Number(lat),
-        longitude: Number(lng),
+        projectName: projectEl.value.trim() || "",
+        houseText: houseEl.value.trim() || "",
+        road: roadEl.value.trim() || "",
+        assetType: typeEl.value,
+        latitude: Number(latEl.value),
+        longitude: Number(lngEl.value),
         lineUserId: profile.userId,
-        lineDisplayName: profile.displayName,
+        lineDisplayName: profile.displayName || "",
         images
       };
 
-      // สำคัญ: ไม่ใส่ headers Content-Type เพื่อเลี่ยง preflight
+      // ไม่ใส่ headers เพื่อลด preflight
       const res = await fetch(BACKEND_URL, {
         method: "POST",
         body: JSON.stringify(payload),
       });
 
+      setProgress(true, 95, "กำลังบันทึกลงชีท/ไดรฟ์...");
       const json = await res.json();
+
       if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
 
-      result.textContent = "";
+      setProgress(true, 100, "เสร็จสิ้น");
+      setTimeout(() => setProgress(false), 400);
+
       showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
 
     } catch (e) {
+      setProgress(false);
       result.innerHTML = `<span class="err">${e.message || e}</span>`;
       btn.disabled = false;
     }
   }
 
+  // ---------- Modal ----------
   function showSuccessModal(message) {
     const modal = document.getElementById("successModal");
     const msgEl = document.getElementById("successMsg");
@@ -335,6 +362,40 @@
       liff.closeWindow();
     } else {
       window.close();
+    }
+  }
+
+  // ---------- LIFF init ----------
+  async function init() {
+    const whoEl = document.getElementById("who");
+    try {
+      whoEl.textContent = "กำลังเริ่ม LIFF...";
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isInClient()) {
+        whoEl.innerHTML = `<span class="err">ลิงก์นี้ต้องเปิดใน LINE เท่านั้น</span>`;
+        return;
+      }
+      if (!liff.isLoggedIn()) {
+        whoEl.textContent = "กำลังเข้าสู่ระบบ LINE...";
+        liff.login();
+        return;
+      }
+
+      profile = await liff.getProfile();
+      whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
+      document.getElementById("uid").textContent = profile.userId || "";
+
+      bindPreview("img1","p1");
+      bindPreview("img2","p2");
+      bindPreview("img3","p3");
+
+      // auto location
+      getLocation();
+
+    } catch (e) {
+      whoEl.innerHTML = `<span class="err">LIFF error: ${e.message || e}</span>`;
+      console.error(e);
     }
   }
 
