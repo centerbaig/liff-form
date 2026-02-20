@@ -39,7 +39,6 @@
     button:disabled{opacity:.6;cursor:not-allowed}
 
     .btn{background:#0b57d0;color:#fff;margin-top:10px}
-    .btn2{background:#111827;color:#fff}
     .btnGhost{background:#f3f4f6;color:#111827;border:1px solid #e5e7eb}
 
     .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -56,9 +55,24 @@
     .ok{color:green;font-weight:700}
     .err{color:#b91c1c;font-weight:700}
 
+    /* photo section */
+    .photoBox{
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:12px;
+      margin:12px 0;
+      background:#fff;
+    }
+    .photoTitle{
+      font-weight:700;
+      margin:0 0 8px;
+    }
+
+    /* ปุ่มถ่าย/เลือกรูป (สีเดียวกัน) */
     .pick{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 6px}
     .pick button{flex:1;min-width:140px}
 
+    /* Popup modal */
     .modal-backdrop{
       position:fixed; inset:0;
       background:rgba(0,0,0,.45);
@@ -80,6 +94,7 @@
     .modal .actions{display:flex;gap:10px}
     .modal .actions button{width:100%}
 
+    /* progress */
     .progressWrap{margin-top:8px}
     .progressBar{
       width:100%;
@@ -138,32 +153,41 @@
   </div>
 
   <div class="card">
-    <label>1) รูปหน้าบ้าน <span class="err">*</span></label>
-    <div class="pick">
-      <button class="btn2" type="button" id="btn1cam">ถ่ายรูป</button>
-      <button class="btnGhost" type="button" id="btn1lib">เลือกรูป</button>
+    <!-- 1 -->
+    <div class="photoBox">
+      <div class="photoTitle">1) รูปหน้าบ้าน <span class="err">*</span></div>
+      <div class="pick">
+        <button class="btnGhost" type="button" id="btn1cam">ถ่ายรูป</button>
+        <button class="btnGhost" type="button" id="btn1lib">เลือกรูป</button>
+      </div>
+      <input type="file" id="img1_cam" accept="image/*" capture="environment" style="display:none" />
+      <input type="file" id="img1_lib" accept="image/*" style="display:none" />
+      <img id="p1" class="preview" />
     </div>
-    <input type="file" id="img1_cam" accept="image/*" capture="environment" style="display:none" />
-    <input type="file" id="img1_lib" accept="image/*" style="display:none" />
-    <img id="p1" class="preview" />
 
-    <label>3) รูปป้ายประกาศ <span class="err">*</span></label>
-    <div class="pick">
-      <button class="btn2" type="button" id="btn3cam">ถ่ายรูป</button>
-      <button class="btnGhost" type="button" id="btn3lib">เลือกรูป</button>
+    <!-- 3 -->
+    <div class="photoBox">
+      <div class="photoTitle">3) รูปป้ายประกาศ <span class="err">*</span></div>
+      <div class="pick">
+        <button class="btnGhost" type="button" id="btn3cam">ถ่ายรูป</button>
+        <button class="btnGhost" type="button" id="btn3lib">เลือกรูป</button>
+      </div>
+      <input type="file" id="img3_cam" accept="image/*" capture="environment" style="display:none" />
+      <input type="file" id="img3_lib" accept="image/*" style="display:none" />
+      <img id="p3" class="preview" />
     </div>
-    <input type="file" id="img3_cam" accept="image/*" capture="environment" style="display:none" />
-    <input type="file" id="img3_lib" accept="image/*" style="display:none" />
-    <img id="p3" class="preview" />
 
-    <label>2) รูปบ้านเลขที่ (ไม่บังคับ)</label>
-    <div class="pick">
-      <button class="btn2" type="button" id="btn2cam">ถ่ายรูป</button>
-      <button class="btnGhost" type="button" id="btn2lib">เลือกรูป</button>
+    <!-- 2 -->
+    <div class="photoBox">
+      <div class="photoTitle">2) รูปบ้านเลขที่ (ไม่บังคับ)</div>
+      <div class="pick">
+        <button class="btnGhost" type="button" id="btn2cam">ถ่ายรูป</button>
+        <button class="btnGhost" type="button" id="btn2lib">เลือกรูป</button>
+      </div>
+      <input type="file" id="img2_cam" accept="image/*" capture="environment" style="display:none" />
+      <input type="file" id="img2_lib" accept="image/*" style="display:none" />
+      <img id="p2" class="preview" />
     </div>
-    <input type="file" id="img2_cam" accept="image/*" capture="environment" style="display:none" />
-    <input type="file" id="img2_lib" accept="image/*" style="display:none" />
-    <img id="p2" class="preview" />
 
     <button class="btn" id="submitBtn" type="button" onclick="submitForm()">ส่งข้อมูล</button>
     <div id="result" class="small"></div>
@@ -195,17 +219,13 @@
 <script>
   const LIFF_ID = "2009152302-xTk3ZrjV";
 
-  // ✅ สำคัญมาก: ใส่ Web App URL "ตัวล่าสุด" ที่คุณเปิดแล้วขึ้น OK
-  // ตัวอย่างรูปแบบจะประมาณนี้:
-  // https://script.googleusercontent.com/a/macros/your-domain.com/echo?user_content_key=...
-  const BACKEND_URL = "https://script.googleusercontent.com/a/macros/bangkokassets.com/echo?user_content_key=AY5xjrS46WdR_zKhIvStwZe8JR2LU6hR-HXjDpd633vJq3DogCxVztGip0mz7s-C-VBXfQGa29yU57WEL_f2UTRCy2qMB7m7DN942PlZURhj3ziZ7ioAH1Zpla9zOr6C6mGJzEHYNCfKE73w47HmhKPmKVsjBpDpO0izXcuh4h1AlfOLu8Hzl2s8hEjMh0zX9giFwl7LeNfbw3yPgmfDyBdTf_SSOcoCVD-bZQSgrcbM2a9bMnKe5YF_wz6Blq1y0s9mbUmNmvxAq1q_gscx0Tsb3uXLph3jUDxNXr5LH3_t_qy78aYfNXYE-8PROHxMDg&lib=MWp1UknZYyZXHhifW0NBLeRz2aiC72MHv";
+  // ✅ สำคัญ: ใช้ googleusercontent /macros/s/.../exec (ไม่ใช้ echo)
+  const BACKEND_URL = "https://script.googleusercontent.com/macros/s/PUT_YOUR_DEPLOYMENT_ID_HERE/exec";
 
-  // ✅ resize config (ตามที่คุณขอ)
   const MAX_SIDE = 1024;
   const JPEG_QUALITY = 0.75;
 
   let profile = null;
-
   let fileFront = null;
   let fileHouseNo = null;
   let fileSign = null;
@@ -217,18 +237,15 @@
     const fill  = document.getElementById("sendingFill");
 
     msgEl.textContent = msg;
-
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
-    if (pctEl) pctEl.textContent = `${Math.round(p)}%`;
-    if (fill) fill.style.width = `${p}%`;
-
+    pctEl.textContent = `${Math.round(p)}%`;
+    fill.style.width = `${p}%`;
     modal.style.display = show ? "flex" : "none";
   }
 
   function showSuccessModal(message){
     const modal = document.getElementById("successModal");
-    const msgEl = document.getElementById("successMsg");
-    msgEl.textContent = message || "ระบบบันทึกข้อมูลเรียบร้อยแล้ว";
+    document.getElementById("successMsg").textContent = message || "ระบบบันทึกข้อมูลเรียบร้อยแล้ว";
     modal.style.display = "flex";
   }
 
@@ -255,8 +272,17 @@
 
     if (msg){
       const result = document.getElementById("result");
-      if (result) result.innerHTML = `<span class="err">${msg}</span>`;
+      result.innerHTML = `<span class="err">${msg}</span>`;
     }
+  }
+
+  function setupPickButtons(){
+    document.getElementById("btn1cam").onclick = () => document.getElementById("img1_cam").click();
+    document.getElementById("btn1lib").onclick = () => document.getElementById("img1_lib").click();
+    document.getElementById("btn2cam").onclick = () => document.getElementById("img2_cam").click();
+    document.getElementById("btn2lib").onclick = () => document.getElementById("img2_lib").click();
+    document.getElementById("btn3cam").onclick = () => document.getElementById("img3_cam").click();
+    document.getElementById("btn3lib").onclick = () => document.getElementById("img3_lib").click();
   }
 
   function bindDualPicker(camId, libId, previewId, setFile){
@@ -269,8 +295,7 @@
       const f = input.files[0];
       setFile(f);
 
-      const url = URL.createObjectURL(f);
-      img.src = url;
+      img.src = URL.createObjectURL(f);
       img.style.display = "block";
 
       if (input === cam) lib.value = "";
@@ -278,17 +303,6 @@
     }
     cam.addEventListener("change", () => onPick(cam));
     lib.addEventListener("change", () => onPick(lib));
-  }
-
-  function setupPickButtons(){
-    document.getElementById("btn1cam").onclick = () => document.getElementById("img1_cam").click();
-    document.getElementById("btn1lib").onclick = () => document.getElementById("img1_lib").click();
-
-    document.getElementById("btn2cam").onclick = () => document.getElementById("img2_cam").click();
-    document.getElementById("btn2lib").onclick = () => document.getElementById("img2_lib").click();
-
-    document.getElementById("btn3cam").onclick = () => document.getElementById("img3_cam").click();
-    document.getElementById("btn3lib").onclick = () => document.getElementById("img3_lib").click();
   }
 
   function getLocation(){
@@ -302,10 +316,8 @@
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        document.getElementById("lat").value = lat;
-        document.getElementById("lng").value = lng;
+        document.getElementById("lat").value = pos.coords.latitude;
+        document.getElementById("lng").value = pos.coords.longitude;
         msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว</span>`;
       },
       (err) => {
@@ -330,7 +342,6 @@
 
   async function fileToJpegDataUrlResized(file, maxSide=1024, quality=0.75){
     const dataUrl = await fileToDataUrl(file);
-
     const img = await new Promise((resolve, reject) => {
       const im = new Image();
       im.onload = () => resolve(im);
@@ -338,11 +349,9 @@
       im.src = dataUrl;
     });
 
-    let w = img.width;
-    let h = img.height;
-
+    let w = img.width, h = img.height;
     const longer = Math.max(w, h);
-    if (longer > maxSide) {
+    if (longer > maxSide){
       const scale = maxSide / longer;
       w = Math.round(w * scale);
       h = Math.round(h * scale);
@@ -351,51 +360,33 @@
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
-
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, w, h);
-
+    canvas.getContext("2d").drawImage(img, 0, 0, w, h);
     return canvas.toDataURL("image/jpeg", quality);
   }
 
-  // ✅ ปรับให้ debug ได้ชัด: ถ้า status ไม่ 200 จะ reject พร้อม response
   function postJsonWithProgress(url, payload, onPct){
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url, true);
-      xhr.timeout = 120000; // 120s กันรูปใหญ่/เน็ตช้า
-      xhr.responseType = "text";
 
       xhr.upload.onprogress = (evt) => {
         if (!evt.lengthComputable) return;
         const pct = (evt.loaded / evt.total) * 100;
-        if (typeof onPct === "function") onPct(pct);
+        onPct?.(pct);
       };
 
       xhr.onload = () => {
-        // ถ้าไม่ใช่ 2xx/3xx ให้เห็นชัด ๆ
-        if (xhr.status < 200 || xhr.status >= 400) {
-          return reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText || "(no body)"}`));
-        }
-        try {
-          const json = JSON.parse(xhr.responseText || "{}");
-          resolve(json);
-        } catch (e) {
-          reject(new Error("Response is not JSON"));
-        }
+        try { resolve(JSON.parse(xhr.responseText || "{}")); }
+        catch { reject(new Error("Response is not JSON")); }
       };
 
-      xhr.ontimeout = () => reject(new Error("Request timeout"));
-      xhr.onerror = () => reject(new Error("Network error (อาจเป็น URL ไม่ตรง deploy ล่าสุด หรือโดน redirect/cors)"));
-
-      // ไม่ใส่ Content-Type เพื่อลดโอกาส preflight
+      xhr.onerror = () => reject(new Error("Network error"));
       xhr.send(JSON.stringify(payload));
     });
   }
 
   async function init(){
     const whoEl = document.getElementById("who");
-
     try{
       whoEl.textContent = "กำลังเริ่ม LIFF...";
       await liff.init({ liffId: LIFF_ID });
@@ -415,13 +406,11 @@
       document.getElementById("uid").textContent = profile.userId || "";
 
       setupPickButtons();
-
       bindDualPicker("img1_cam","img1_lib","p1",(f)=>fileFront=f);
       bindDualPicker("img2_cam","img2_lib","p2",(f)=>fileHouseNo=f);
       bindDualPicker("img3_cam","img3_lib","p3",(f)=>fileSign=f);
 
       getLocation();
-
     }catch(e){
       whoEl.innerHTML = `<span class="err">LIFF error: ${e.message || e}</span>`;
       console.error(e);
@@ -435,52 +424,23 @@
     btn.disabled = true;
 
     try{
-      if (!profile || !profile.userId){
-        btn.disabled = false;
-        throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
-      }
+      const assetType = document.getElementById("assetType").value;
+      const lat = document.getElementById("lat").value;
+      const lng = document.getElementById("lng").value;
 
-      const projectEl = document.getElementById("projectName");
-      const houseEl   = document.getElementById("houseText");
-      const typeEl    = document.getElementById("assetType");
-      const latEl     = document.getElementById("lat");
-      const lngEl     = document.getElementById("lng");
-
-      const assetType = typeEl.value;
-      const lat = latEl.value;
-      const lng = lngEl.value;
-
-      if (!assetType){
-        btn.disabled = false;
-        focusTo(typeEl, "กรุณาเลือกประเภททรัพย์");
-        return;
-      }
-      if (!lat || !lng){
-        btn.disabled = false;
-        focusTo(document.getElementById("locBtn"), "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
-        return;
-      }
-
-      if (!fileFront){
-        btn.disabled = false;
-        focusTo(document.getElementById("btn1cam"), "กรุณาแนบรูปหน้าบ้าน");
-        return;
-      }
-      if (!fileSign){
-        btn.disabled = false;
-        focusTo(document.getElementById("btn3cam"), "กรุณาแนบรูปป้ายประกาศ");
-        return;
-      }
+      if (!assetType){ btn.disabled=false; focusTo(document.getElementById("assetType"), "กรุณาเลือกประเภททรัพย์"); return; }
+      if (!lat || !lng){ btn.disabled=false; focusTo(document.getElementById("locBtn"), "กรุณาดึงพิกัดก่อน"); return; }
+      if (!fileFront){ btn.disabled=false; focusTo(document.getElementById("btn1cam"), "กรุณาแนบรูปหน้าบ้าน"); return; }
+      if (!fileSign){ btn.disabled=false; focusTo(document.getElementById("btn3cam"), "กรุณาแนบรูปป้ายประกาศ"); return; }
 
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 0);
 
-      const projectName = projectEl.value.trim() || "";
-      const houseText   = houseEl.value.trim() || "";
+      const projectName = document.getElementById("projectName").value.trim() || "";
+      const houseText   = document.getElementById("houseText").value.trim() || "";
 
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 5);
 
       const images = [];
-
       const d1 = await fileToJpegDataUrlResized(fileFront, MAX_SIDE, JPEG_QUALITY);
       images.push({ label:"front_house", dataUrl:d1 });
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 25);
@@ -496,11 +456,8 @@
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 60);
 
       const payload = {
-        projectName,
-        houseText,
-        assetType,
-        latitude: Number(lat),
-        longitude: Number(lng),
+        projectName, houseText, assetType,
+        latitude: Number(lat), longitude: Number(lng),
         lineUserId: profile.userId,
         lineDisplayName: profile.displayName,
         images
@@ -517,7 +474,6 @@
 
       showSending(false);
       showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
-
     }catch(e){
       showSending(false);
       result.innerHTML = `<span class="err">${e.message || e}</span>`;
