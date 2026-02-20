@@ -56,11 +56,9 @@
     .ok{color:green;font-weight:700}
     .err{color:#b91c1c;font-weight:700}
 
-    /* ปุ่มถ่าย/เลือกรูป */
     .pick{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 6px}
     .pick button{flex:1;min-width:140px}
 
-    /* Popup modal */
     .modal-backdrop{
       position:fixed; inset:0;
       background:rgba(0,0,0,.45);
@@ -82,7 +80,6 @@
     .modal .actions{display:flex;gap:10px}
     .modal .actions button{width:100%}
 
-    /* progress */
     .progressWrap{margin-top:8px}
     .progressBar{
       width:100%;
@@ -107,7 +104,6 @@
 
   <div class="card">
     <div><b>ผู้ส่ง:</b> <span id="who">กำลังโหลด...</span></div>
-    <!-- ซ่อน userId จาก UI (ยังส่งไป backend ได้) -->
     <div id="uid" style="display:none"></div>
   </div>
 
@@ -200,13 +196,12 @@
   const LIFF_ID = "2009152302-xTk3ZrjV";
   const BACKEND_URL = "https://script.google.com/macros/s/AKfycby8gbWx0N_DAy_FO4sPyiXREl08LeqJSWBNxazJZupssyYC-JhRC3qzDn8I-t_jMb26/exec";
 
-  // ✅ resize config (ตามที่คุณขอ)
-  const MAX_SIDE = 1024;
-  const JPEG_QUALITY = 0.75;
+  // ✅ resize config
+  const MAX_SIDE = 1024;     // ตามที่คุณขอ
+  const JPEG_QUALITY = 0.72; // ลดนิดนึงให้ไวขึ้น (ปรับได้)
 
   let profile = null;
 
-  // ไฟล์รูปที่เลือก/ถ่ายจริง
   let fileFront = null;
   let fileHouseNo = null; // optional
   let fileSign = null;
@@ -220,8 +215,8 @@
     msgEl.textContent = msg;
 
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
-    if (pctEl) pctEl.textContent = `${Math.round(p)}%`;
-    if (fill) fill.style.width = `${p}%`;
+    pctEl.textContent = `${Math.round(p)}%`;
+    fill.style.width = `${p}%`;
 
     modal.style.display = show ? "flex" : "none";
   }
@@ -270,11 +265,9 @@
       const f = input.files[0];
       setFile(f);
 
-      const url = URL.createObjectURL(f);
-      img.src = url;
+      img.src = URL.createObjectURL(f);
       img.style.display = "block";
 
-      // ล้างอีกฝั่งกันไฟล์ค้าง
       if (input === cam) lib.value = "";
       if (input === lib) cam.value = "";
     }
@@ -304,10 +297,8 @@
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        document.getElementById("lat").value = lat;
-        document.getElementById("lng").value = lng;
+        document.getElementById("lat").value = pos.coords.latitude;
+        document.getElementById("lng").value = pos.coords.longitude;
         msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว</span>`;
       },
       (err) => {
@@ -330,22 +321,20 @@
     });
   }
 
-  // ✅ resize/compress ก่อนส่ง (maxSide = 1024)
-  async function fileToJpegDataUrlResized(file, maxSide=1024, quality=0.75){
-    const dataUrl = await fileToDataUrl(file);
+  // ✅ resize/compress เป็น JPEG (maxSide=1024)
+  async function fileToJpegDataUrlResized(file, maxSide=1024, quality=0.72){
+    const src = await fileToDataUrl(file);
 
     const img = await new Promise((resolve, reject) => {
       const im = new Image();
       im.onload = () => resolve(im);
       im.onerror = reject;
-      im.src = dataUrl;
+      im.src = src;
     });
 
-    let w = img.width;
-    let h = img.height;
-
+    let w = img.width, h = img.height;
     const longer = Math.max(w, h);
-    if (longer > maxSide) {
+    if (longer > maxSide){
       const scale = maxSide / longer;
       w = Math.round(w * scale);
       h = Math.round(h * scale);
@@ -358,14 +347,18 @@
     const ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0, w, h);
 
+    // บังคับเป็น jpeg เสมอ
     return canvas.toDataURL("image/jpeg", quality);
   }
 
-  // ✅ POST + progress จริง (upload.onprogress)
+  // ✅ POST + progress จริง + ตรวจ status
   function postJsonWithProgress(url, payload, onPct){
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url, true);
+
+      // กันค้าง (ปรับได้)
+      xhr.timeout = 60000;
 
       xhr.upload.onprogress = (evt) => {
         if (!evt.lengthComputable) return;
@@ -374,15 +367,22 @@
       };
 
       xhr.onload = () => {
+        // ถ้าไม่ใช่ 200 ให้ถือว่า error
+        if (xhr.status < 200 || xhr.status >= 300) {
+          reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText || "Request failed"}`));
+          return;
+        }
         try {
-          const json = JSON.parse(xhr.responseText || "{}");
-          resolve(json);
+          resolve(JSON.parse(xhr.responseText || "{}"));
         } catch (e) {
           reject(new Error("Response is not JSON"));
         }
       };
 
+      xhr.ontimeout = () => reject(new Error("Request timeout"));
       xhr.onerror = () => reject(new Error("Network error"));
+
+      // ❗ ไม่ตั้ง Content-Type เพื่อเลี่ยง preflight (คงแบบที่คุณทำไว้)
       xhr.send(JSON.stringify(payload));
     });
   }
@@ -409,12 +409,10 @@
       document.getElementById("uid").textContent = profile.userId || "";
 
       setupPickButtons();
-
       bindDualPicker("img1_cam","img1_lib","p1",(f)=>fileFront=f);
       bindDualPicker("img2_cam","img2_lib","p2",(f)=>fileHouseNo=f);
       bindDualPicker("img3_cam","img3_lib","p3",(f)=>fileSign=f);
 
-      // ดึงพิกัดอัตโนมัติ
       getLocation();
 
     }catch(e){
@@ -455,8 +453,6 @@
         focusTo(document.getElementById("locBtn"), "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
         return;
       }
-
-      // บังคับรูปหน้าบ้าน + ป้ายประกาศ
       if (!fileFront){
         btn.disabled = false;
         focusTo(document.getElementById("btn1cam"), "กรุณาแนบรูปหน้าบ้าน");
@@ -468,18 +464,15 @@
         return;
       }
 
-      // เปิด popup และเริ่ม 0%
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 0);
 
       const projectName = projectEl.value.trim() || "";
       const houseText   = houseEl.value.trim() || "";
 
-      // ✅ เตรียมรูปแบบ resize/compress ก่อนส่ง
-      // เดิน % ช่วงเตรียมรูป 0–60
+      // เตรียมรูป (0–60)
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 5);
 
       const images = [];
-
       const d1 = await fileToJpegDataUrlResized(fileFront, MAX_SIDE, JPEG_QUALITY);
       images.push({ label:"front_house", dataUrl:d1 });
       showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", 25);
@@ -505,7 +498,7 @@
         images
       };
 
-      // ✅ ส่งด้วย progress จริง (60–95)
+      // ส่งจริง (60–95)
       const json = await postJsonWithProgress(BACKEND_URL, payload, (uploadPct) => {
         const pct = 60 + (uploadPct * 0.35);
         showSending(true, "กำลังส่งข้อมูลไปยังระบบ...", pct);
