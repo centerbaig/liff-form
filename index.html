@@ -30,13 +30,7 @@
     .ok{color:green;font-weight:700}
     .err{color:#b91c1c;font-weight:700}
 
-    /* Progress */
-    .progress-wrap{margin-top:10px;display:none}
-    .progress-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
-    .progress-top span{font-size:13px;color:#444}
-    progress{width:100%;height:14px}
-
-    /* Popup modal */
+    /* Success Popup */
     .modal-backdrop{
       position:fixed; inset:0;background:rgba(0,0,0,.45);
       display:none;align-items:center;justify-content:center;padding:16px;z-index:9999;
@@ -49,6 +43,39 @@
     .modal p{margin:0 0 12px;color:#444}
     .modal .actions{display:flex;gap:10px}
     .modal .actions button{width:100%}
+
+    /* Progress Popup (Bottom Sheet Style) */
+    .progress-backdrop{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.35);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding:16px;
+      z-index:10000;
+    }
+    .progress-sheet{
+      width:min(520px, 100%);
+      background:#fff;
+      border-radius:16px;
+      padding:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
+    }
+    .progress-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .progress-top .title{
+      font-size:14px;color:#111827;font-weight:700;
+    }
+    .progress-top .pct{
+      font-size:14px;color:#111827;font-weight:700;
+    }
+    progress{width:100%;height:14px}
+    .progress-sub{margin-top:8px;font-size:13px;color:#555}
   </style>
 </head>
 
@@ -69,9 +96,6 @@
 
     <label>บ้านเลขที่ (ไม่บังคับ)</label>
     <input id="houseText" placeholder="เช่น 223/1" />
-
-    <label>ถนน (ไม่บังคับ)</label>
-    <input id="road" placeholder="เช่น ถนนราชพฤกษ์" />
 
     <label>ประเภททรัพย์ <span class="err">*</span></label>
     <select id="assetType">
@@ -111,14 +135,6 @@
 
     <button class="btn" id="submitBtn" type="button" onclick="submitForm()">ส่งข้อมูล</button>
     <div id="result" class="small"></div>
-
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-top">
-        <span id="progressText">กำลังเตรียมข้อมูล...</span>
-        <span id="progressPct">0%</span>
-      </div>
-      <progress id="progressBar" value="0" max="100"></progress>
-    </div>
   </div>
 
   <!-- Success Popup -->
@@ -132,9 +148,22 @@
     </div>
   </div>
 
+  <!-- Progress Popup -->
+  <div id="progressModal" class="progress-backdrop">
+    <div class="progress-sheet">
+      <div class="progress-top">
+        <div class="title" id="progressText">กำลังส่งข้อมูลไปยังระบบ...</div>
+        <div class="pct" id="progressPct">0%</div>
+      </div>
+      <progress id="progressBar" value="0" max="100"></progress>
+      <div class="progress-sub">โปรดรอสักครู่ ระบบกำลังประมวลผลและบันทึกข้อมูล</div>
+    </div>
+  </div>
+
 <script>
   const LIFF_ID = "2009152302-xTk3ZrjV";
   const BACKEND_URL = "https://script.google.com/macros/s/AKfycby8gbWx0N_DAy_FO4sPyiXREl08LeqJSWBNxazJZupssyYC-JhRC3qzDn8I-t_jMb26/exec";
+  const PROGRESS_TEXT = "กำลังส่งข้อมูลไปยังระบบ...";
 
   let profile = null;
 
@@ -159,16 +188,18 @@
   }
   function focusToFile(inputEl, msg){ focusTo(inputEl, msg); }
 
-  function setProgress(on, pct = 0, text = "") {
-    const wrap = document.getElementById("progressWrap");
+  function showProgress(pct) {
+    const modal = document.getElementById("progressModal");
     const bar = document.getElementById("progressBar");
-    const t = document.getElementById("progressText");
     const p = document.getElementById("progressPct");
-    wrap.style.display = on ? "block" : "none";
-    if (!on) return;
+    const t = document.getElementById("progressText");
+    modal.style.display = "flex";
+    t.textContent = PROGRESS_TEXT;
     bar.value = Math.max(0, Math.min(100, pct));
     p.textContent = `${Math.round(bar.value)}%`;
-    if (text) t.textContent = text;
+  }
+  function hideProgress() {
+    document.getElementById("progressModal").style.display = "none";
   }
 
   // ---------- Preview ----------
@@ -212,20 +243,16 @@
 
   // ---------- Image resize/compress ----------
   async function resizeImageToDataUrl(file, maxSide = 1280, quality = 0.75) {
-    // ลดขนาด/บีบอัด -> JPEG (เร็วขึ้นมาก)
     const bitmap = await createImageBitmap(file);
-    let { width, height } = bitmap;
-
-    const scale = Math.min(1, maxSide / Math.max(width, height));
-    const nw = Math.round(width * scale);
-    const nh = Math.round(height * scale);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const nw = Math.round(bitmap.width * scale);
+    const nh = Math.round(bitmap.height * scale);
 
     const canvas = document.createElement("canvas");
     canvas.width = nw; canvas.height = nh;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(bitmap, 0, 0, nw, nh);
 
-    // แปลงเป็น JPEG
     return canvas.toDataURL("image/jpeg", quality);
   }
 
@@ -235,18 +262,13 @@
     const btn = document.getElementById("submitBtn");
     result.textContent = "";
     btn.disabled = true;
-    setProgress(true, 0, "กำลังตรวจสอบข้อมูล...");
 
     try {
       if (!profile || !profile.userId) {
         btn.disabled = false;
-        setProgress(false);
         throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
       }
 
-      const projectEl = document.getElementById("projectName");
-      const houseEl = document.getElementById("houseText");
-      const roadEl = document.getElementById("road");
       const typeEl = document.getElementById("assetType");
       const latEl = document.getElementById("lat");
       const lngEl = document.getElementById("lng");
@@ -255,69 +277,53 @@
       const img2El = document.getElementById("img2"); // optional
       const img3El = document.getElementById("img3");
 
-      // required: assetType
+      // Required checks + jump
       if (!typeEl.value) {
         btn.disabled = false;
-        setProgress(false);
         focusTo(typeEl, "กรุณาเลือกประเภททรัพย์");
         return;
       }
-
-      // required: lat/lng
       if (!latEl.value || !lngEl.value) {
         btn.disabled = false;
-        setProgress(false);
         const locBtn = document.querySelector('button.btn2');
         focusTo(locBtn || latEl, "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
         return;
       }
 
-      // required: img1, img3
       const f1 = img1El.files[0];
-      if (!f1) {
-        btn.disabled = false;
-        setProgress(false);
-        focusToFile(img1El, "กรุณาแนบรูปหน้าบ้าน");
-        return;
-      }
+      if (!f1) { btn.disabled = false; focusToFile(img1El, "กรุณาแนบรูปหน้าบ้าน"); return; }
+
       const f3 = img3El.files[0];
-      if (!f3) {
-        btn.disabled = false;
-        setProgress(false);
-        focusToFile(img3El, "กรุณาแนบรูปป้ายประกาศ");
-        return;
-      }
+      if (!f3) { btn.disabled = false; focusToFile(img3El, "กรุณาแนบรูปป้ายประกาศ"); return; }
 
       const f2 = img2El.files[0] || null;
 
-      // Step: resize
-      setProgress(true, 10, "กำลังลดขนาดรูปภาพ...");
-      const images = [];
+      // Progress popup (ข้อความเดียวตามที่ต้องการ)
+      showProgress(5);
 
-      // ทำเป็นขั้น ๆ ให้เห็น progress
+      // Resize images (อัปเดต % แต่ข้อความเดิม)
+      const images = [];
       const d1 = await resizeImageToDataUrl(f1, 1280, 0.75);
-      setProgress(true, 35, "กำลังเตรียมรูปภาพ (1/3)...");
+      showProgress(35);
       images.push({ label: "front_house", dataUrl: d1 });
 
       if (f2) {
         const d2 = await resizeImageToDataUrl(f2, 1280, 0.75);
-        setProgress(true, 55, "กำลังเตรียมรูปภาพ (2/3)...");
+        showProgress(55);
         images.push({ label: "house_no", dataUrl: d2 });
       } else {
-        setProgress(true, 55, "กำลังเตรียมรูปภาพ (ข้ามรูปบ้านเลขที่)...");
+        showProgress(55);
       }
 
       const d3 = await resizeImageToDataUrl(f3, 1280, 0.75);
-      setProgress(true, 75, "กำลังเตรียมรูปภาพ (3/3)...");
+      showProgress(75);
       images.push({ label: "notice_sign", dataUrl: d3 });
 
-      // Step: send
-      setProgress(true, 85, "กำลังส่งข้อมูลไปยังระบบ...");
+      showProgress(85);
 
       const payload = {
-        projectName: projectEl.value.trim() || "",
-        houseText: houseEl.value.trim() || "",
-        road: roadEl.value.trim() || "",
+        projectName: (document.getElementById("projectName").value || "").trim(),
+        houseText: (document.getElementById("houseText").value || "").trim(),
         assetType: typeEl.value,
         latitude: Number(latEl.value),
         longitude: Number(lngEl.value),
@@ -326,24 +332,24 @@
         images
       };
 
-      // ไม่ใส่ headers เพื่อลด preflight
       const res = await fetch(BACKEND_URL, {
         method: "POST",
         body: JSON.stringify(payload),
       });
 
-      setProgress(true, 95, "กำลังบันทึกลงชีท/ไดรฟ์...");
-      const json = await res.json();
+      showProgress(95);
 
+      const json = await res.json();
       if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
 
-      setProgress(true, 100, "เสร็จสิ้น");
-      setTimeout(() => setProgress(false), 400);
-
-      showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
+      showProgress(100);
+      setTimeout(() => {
+        hideProgress();
+        showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
+      }, 350);
 
     } catch (e) {
-      setProgress(false);
+      hideProgress();
       result.innerHTML = `<span class="err">${e.message || e}</span>`;
       btn.disabled = false;
     }
@@ -390,7 +396,6 @@
       bindPreview("img2","p2");
       bindPreview("img3","p3");
 
-      // auto location
       getLocation();
 
     } catch (e) {
