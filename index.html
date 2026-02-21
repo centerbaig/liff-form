@@ -303,19 +303,19 @@
 
       // Resize images (อัปเดต % แต่ข้อความเดิม)
       const images = [];
-      const d1 = await resizeImageToDataUrl(f1, 1280, 0.75);
+      const d1 = await resizeImageToDataUrl(f1, 960, 0.70);
       showProgress(35);
       images.push({ label: "front_house", dataUrl: d1 });
 
       if (f2) {
-        const d2 = await resizeImageToDataUrl(f2, 1280, 0.75);
+        const d2 = await resizeImageToDataUrl(f2, 960, 0.70);
         showProgress(55);
         images.push({ label: "house_no", dataUrl: d2 });
       } else {
         showProgress(55);
       }
 
-      const d3 = await resizeImageToDataUrl(f3, 1280, 0.75);
+      const d3 = await resizeImageToDataUrl(f3, 960, 0.70);
       showProgress(75);
       images.push({ label: "notice_sign", dataUrl: d3 });
 
