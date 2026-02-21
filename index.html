@@ -299,38 +299,42 @@
       const f2 = img2El.files[0] || null;
 
       // Progress popup (ข้อความเดียวตามที่ต้องการ)
-      showProgress(5);
+// Progress popup (ข้อความเดียวตามที่ต้องการ)
+showProgress(5);
 
-      // Resize images (อัปเดต % แต่ข้อความเดิม)
-      const images = [];
-      const d1 = await resizeImageToDataUrl(f1, 960, 0.70);
-      showProgress(35);
-      images.push({ label: "front_house", dataUrl: d1 });
+// ✅ Resize พร้อมกัน (เร็วกว่า await ทีละรูป)
+showProgress(15);
 
-      if (f2) {
-        const d2 = await resizeImageToDataUrl(f2, 960, 0.70);
-        showProgress(55);
-        images.push({ label: "house_no", dataUrl: d2 });
-      } else {
-        showProgress(55);
-      }
+const pFront = resizeImageToDataUrl(f1, 960, 0.70);
+const pNotice = resizeImageToDataUrl(f3, 960, 0.70);
+const pHouseNo = f2 ? resizeImageToDataUrl(f2, 960, 0.70) : Promise.resolve(null);
 
-      const d3 = await resizeImageToDataUrl(f3, 960, 0.70);
-      showProgress(75);
-      images.push({ label: "notice_sign", dataUrl: d3 });
+showProgress(35);
 
-      showProgress(85);
+const [d1, d3, d2] = await Promise.all([pFront, pNotice, pHouseNo]);
 
-      const payload = {
-        projectName: (document.getElementById("projectName").value || "").trim(),
-        houseText: (document.getElementById("houseText").value || "").trim(),
-        assetType: typeEl.value,
-        latitude: Number(latEl.value),
-        longitude: Number(lngEl.value),
-        lineUserId: profile.userId,
-        lineDisplayName: profile.displayName || "",
-        images
-      };
+showProgress(75);
+
+// ✅ รวม images ตามเดิม (house_no optional)
+const images = [
+  { label: "front_house", dataUrl: d1 },
+  ...(d2 ? [{ label: "house_no", dataUrl: d2 }] : []),
+  { label: "notice_sign", dataUrl: d3 },
+];
+
+// ✅ จุดนี้คือก่อนส่งขึ้น backend (จะค้างนานถ้า backend ช้า)
+showProgress(85);
+
+const payload = {
+  projectName: (document.getElementById("projectName").value || "").trim(),
+  houseText: (document.getElementById("houseText").value || "").trim(),
+  assetType: typeEl.value,
+  latitude: Number(latEl.value),
+  longitude: Number(lngEl.value),
+  lineUserId: profile.userId,
+  lineDisplayName: profile.displayName || "",
+  images
+};
 
       // ⚠️ ไม่ใส่ headers เพื่อเลี่ยง CORS preflight (คงของเดิม)
       const res = await fetch(BACKEND_URL, {
