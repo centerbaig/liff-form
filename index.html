@@ -82,7 +82,7 @@
 <body>
   <h2>ส่งข้อมูลหน้างาน</h2>
   <div class="small">
-    ระบุประเภททรัพย์ > แนบรูป (หน้าบ้าน + ป้ายประกาศ) > ดึงพิกัด > แล้วกดส่ง
+    ระบุประเภททรัพย์ &gt; แนบรูป (หน้าบ้าน + ป้ายประกาศ) &gt; ดึงพิกัด &gt; แล้วกดส่ง
   </div>
 
   <div class="card">
@@ -91,7 +91,7 @@
   </div>
 
   <div class="card">
-    <label>ชื่อโครงการ (ไม่บังคับ)</label>
+    <label>ชื่อโครงการ/หมู่บ้าน (ไม่บังคับ)</label>
     <input id="projectName" placeholder="เช่น โครงการ ABC" />
 
     <label>บ้านเลขที่ (ไม่บังคับ)</label>
@@ -104,7 +104,7 @@
       <option value="ทาวน์เฮ้า/ทาวน์โฮม">ทาวน์เฮ้า/ทาวน์โฮม</option>
       <option value="บ้านแฝด">บ้านแฝด</option>
       <option value="ที่ดิน">ที่ดิน</option>
-      <option value="อาคารพาณิชย์/ตึกแถว">อาคารพาณิชย์/ตึกแถว</option>      
+      <option value="อาคารพาณิชย์/ตึกแถว">อาคารพาณิชย์/ตึกแถว</option>
     </select>
 
     <div class="row">
@@ -244,7 +244,7 @@
   }
 
   // ---------- Image resize/compress ----------
-  async function resizeImageToDataUrl(file, maxSide = 1280, quality = 0.75) {
+  async function resizeImageToDataUrl(file, maxSide = 960, quality = 0.70) {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
     const nw = Math.round(bitmap.width * scale);
@@ -279,7 +279,6 @@
       const img2El = document.getElementById("img2"); // optional
       const img3El = document.getElementById("img3");
 
-      // Required checks + jump
       if (!typeEl.value) {
         btn.disabled = false;
         focusTo(typeEl, "กรุณาเลือกประเภททรัพย์");
@@ -300,43 +299,42 @@
 
       const f2 = img2El.files[0] || null;
 
-      // Progress popup (ข้อความเดียวตามที่ต้องการ)
-// Progress popup (ข้อความเดียวตามที่ต้องการ)
-showProgress(5);
+      // Progress popup
+      showProgress(5);
 
-// ✅ Resize พร้อมกัน (เร็วกว่า await ทีละรูป)
-showProgress(15);
+      // Resize พร้อมกัน
+      showProgress(15);
+      const pFront = resizeImageToDataUrl(f1, 960, 0.70);
+      const pNotice = resizeImageToDataUrl(f3, 960, 0.70);
+      const pHouseNo = f2 ? resizeImageToDataUrl(f2, 960, 0.70) : Promise.resolve(null);
 
-const pFront = resizeImageToDataUrl(f1, 960, 0.70);
-const pNotice = resizeImageToDataUrl(f3, 960, 0.70);
-const pHouseNo = f2 ? resizeImageToDataUrl(f2, 960, 0.70) : Promise.resolve(null);
+      showProgress(35);
+      const [d1, d3, d2] = await Promise.all([pFront, pNotice, pHouseNo]);
 
-showProgress(35);
+      showProgress(75);
 
-const [d1, d3, d2] = await Promise.all([pFront, pNotice, pHouseNo]);
+      const images = [
+        { label: "front_house", dataUrl: d1 },
+        ...(d2 ? [{ label: "house_no", dataUrl: d2 }] : []),
+        { label: "notice_sign", dataUrl: d3 },
+      ];
 
-showProgress(75);
+      // 85% = เตรียม payload (ยังไม่ส่ง)
+      showProgress(85);
 
-// ✅ รวม images ตามเดิม (house_no optional)
-const images = [
-  { label: "front_house", dataUrl: d1 },
-  ...(d2 ? [{ label: "house_no", dataUrl: d2 }] : []),
-  { label: "notice_sign", dataUrl: d3 },
-];
+      const payload = {
+        projectName: (document.getElementById("projectName").value || "").trim(),
+        houseText: (document.getElementById("houseText").value || "").trim(),
+        assetType: typeEl.value,
+        latitude: Number(latEl.value),
+        longitude: Number(lngEl.value),
+        lineUserId: profile.userId,
+        lineDisplayName: profile.displayName || "",
+        images
+      };
 
-// ✅ จุดนี้คือก่อนส่งขึ้น backend (จะค้างนานถ้า backend ช้า)
-showProgress(85);
-
-const payload = {
-  projectName: (document.getElementById("projectName").value || "").trim(),
-  houseText: (document.getElementById("houseText").value || "").trim(),
-  assetType: typeEl.value,
-  latitude: Number(latEl.value),
-  longitude: Number(lngEl.value),
-  lineUserId: profile.userId,
-  lineDisplayName: profile.displayName || "",
-  images
-};
+      // 90% = เริ่มส่งข้อมูลจริง
+      showProgress(90);
 
       // ⚠️ ไม่ใส่ headers เพื่อเลี่ยง CORS preflight (คงของเดิม)
       const res = await fetch(BACKEND_URL, {
@@ -344,6 +342,7 @@ const payload = {
         body: JSON.stringify(payload),
       });
 
+      // 95% = กำลังรอผล/อ่านผล
       showProgress(95);
 
       const json = await res.json();
@@ -353,6 +352,7 @@ const payload = {
       setTimeout(() => {
         hideProgress();
         showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
+        btn.disabled = false;
       }, 350);
 
     } catch (e) {
