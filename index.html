@@ -5,81 +5,59 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LIFF Form</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://unpkg.com/heic2any/dist/heic2any.min.js"></script>
 
   <style>
     *{box-sizing:border-box}
-    body{
-      font-family:system-ui,Segoe UI,Tahoma;
-      max-width:720px;margin:16px auto;padding:0 12px;background:#fff;
-    }
+    body{font-family:system-ui,Segoe UI,Tahoma;max-width:720px;margin:16px auto;padding:0 12px;background:#fff}
     h2{margin:0 0 6px}
     .small{font-size:13px;color:#555;word-break:break-word}
     .card{border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0;overflow:hidden;background:#fff}
     label{display:block;margin:10px 0 6px;font-weight:600}
-    input,button,select{
-      width:100%;max-width:100%;
-      padding:10px;border-radius:10px;border:1px solid #ccc;font-size:16px;background:#fff
-    }
+    input,button,select{width:100%;max-width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:16px;background:#fff}
     button{border:none;cursor:pointer}
     button:disabled{opacity:.6;cursor:not-allowed}
     .btn{background:#0b57d0;color:#fff;margin-top:10px}
     .btn2{background:#111827;color:#fff;margin-top:10px}
+    .btnPhoto{background:#111827;color:#fff;margin-top:6px}
+    .btnGhost{background:#f3f4f6;color:#111827;margin-top:6px;border:1px solid #e5e7eb}
+    .btnDanger{background:#b91c1c;color:#fff;margin-top:6px}
+    .btnOk{background:#16a34a;color:#fff;margin-top:6px} /* ✅ เขียว */
     .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row > div{flex:1;min-width:140px}
+    .row>div{flex:1;min-width:140px}
     img.preview{max-width:100%;border-radius:10px;margin-top:8px;border:1px solid #eee;display:none}
     .ok{color:green;font-weight:700}
     .err{color:#b91c1c;font-weight:700}
 
-    /* Success Popup */
-    .modal-backdrop{
-      position:fixed; inset:0;background:rgba(0,0,0,.45);
-      display:none;align-items:center;justify-content:center;padding:16px;z-index:9999;
-    }
-    .modal{
-      width:min(420px, 100%);background:#fff;border-radius:16px;padding:16px;
-      box-shadow:0 20px 60px rgba(0,0,0,.25);
-    }
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:9999}
+    .modal{width:min(560px,100%);background:#fff;border-radius:16px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
     .modal h3{margin:0 0 6px;font-size:18px;text-align:center}
-    .modal p{margin:0 0 12px;color:#444;line-height:1.55;text-align:center;}
+    .modal p{margin:0 0 12px;color:#444;line-height:1.55;text-align:center}
     .modal .actions{display:flex;gap:10px}
     .modal .actions button{width:100%}
 
-    /* Progress Popup */
-    .progress-backdrop{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.35);
-      display:none;
-      align-items:flex-end;
-      justify-content:center;
-      padding:16px;
-      z-index:10000;
-    }
-    .progress-sheet{
-      width:min(520px, 100%);
-      background:#fff;
-      border-radius:16px;
-      padding:14px;
-      box-shadow:0 20px 60px rgba(0,0,0,.25);
-    }
-    .progress-top{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .progress-top .title{font-size:14px;color:#111827;font-weight:700;}
-    .progress-top .pct{font-size:14px;color:#111827;font-weight:700;}
+    /* Progress */
+    .progress-backdrop{position:fixed; inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:10000}
+    .progress-sheet{width:min(520px,100%);background:#fff;border-radius:16px;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .progress-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+    .progress-top .title{font-size:14px;color:#111827;font-weight:700}
+    .progress-top .pct{font-size:14px;color:#111827;font-weight:700}
     progress{width:100%;height:14px}
     .progress-sub{margin-top:8px;font-size:13px;color:#555}
+
+    /* Camera UI */
+    #camVideo{width:100%;border-radius:12px;background:#000;display:block}
+    #camShot{width:100%;border-radius:12px;border:1px solid #eee;display:none;margin-top:10px}
+    .camHint{margin-top:8px;font-size:13px;color:#555;text-align:center}
+    .camRow{display:flex;gap:10px;margin-top:10px}
+    .camRow button{width:100%}
   </style>
 </head>
 
 <body>
   <h2>ส่งข้อมูลหน้างาน</h2>
   <div class="small">
-    ระบุประเภททรัพย์ &gt; แนบรูป (หน้าบ้าน + ป้ายประกาศ) &gt; ดึงพิกัด &gt; แล้วกดส่ง
+    ระบุประเภททรัพย์ &gt; ถ่ายรูป (หน้าบ้าน + ป้ายประกาศ) &gt; ดึงพิกัด &gt; แล้วกดส่ง
   </div>
 
   <div class="card">
@@ -117,45 +95,66 @@
 
   <div class="card">
     <label>1) รูปหน้าบ้าน <span class="err">*</span></label>
-    <input type="file" id="img1" accept="image/*" capture="environment" />
+    <button class="btnPhoto" type="button" id="btn_front" onclick="openCamera('front_house')">ถ่ายรูปหน้าบ้าน</button>
     <img id="p1" class="preview" />
 
     <label>3) รูปป้ายประกาศ <span class="err">*</span></label>
-    <input type="file" id="img3" accept="image/*" capture="environment" />
+    <button class="btnPhoto" type="button" id="btn_notice" onclick="openCamera('notice_sign')">ถ่ายรูปป้ายประกาศ</button>
     <img id="p3" class="preview" />
 
     <label>2) รูปบ้านเลขที่ (ไม่บังคับ)</label>
-    <input type="file" id="img2" accept="image/*" capture="environment" />
+    <button class="btnPhoto" type="button" id="btn_house" onclick="openCamera('house_no')">ถ่ายรูปบ้านเลขที่</button>
     <img id="p2" class="preview" />
 
-    <!-- ✅ เพิ่มใหม่ -->
     <label>4) รูปเพิ่มเติม 1 (ไม่บังคับ)</label>
-    <input type="file" id="img4" accept="image/*" capture="environment" />
+    <button class="btnPhoto" type="button" id="btn_add1" onclick="openCamera('additional1')">ถ่ายรูปเพิ่มเติม 1</button>
     <img id="p4" class="preview" />
 
-    <!-- ✅ เพิ่มใหม่ -->
     <label>5) รูปเพิ่มเติม 2 (ไม่บังคับ)</label>
-    <input type="file" id="img5" accept="image/*" capture="environment" />
+    <button class="btnPhoto" type="button" id="btn_add2" onclick="openCamera('additional2')">ถ่ายรูปเพิ่มเติม 2</button>
     <img id="p5" class="preview" />
 
     <button class="btn" id="submitBtn" type="button" onclick="submitForm()">ส่งข้อมูล</button>
     <div id="result" class="small"></div>
   </div>
 
-  <!-- ✅ Announcement Popup (ประกาศจากบริษัท) -->
+  <!-- Announcement -->
   <div id="announceModal" class="modal-backdrop">
     <div class="modal">
       <h3>ประกาศ</h3>
-      <p id="announceMsg">
-        กรุณาถ่ายรูปและส่งงานที่ “หน้าบ้าน” หลังที่ประกาศขายเท่านั้น ถ้าสถานที่ในรูปไม่ตรงกับบ้านที่ประกาศขาย จะไม่ผ่านการพิจารณาค่ะ
-      </p>
+      <p>กรุณาถ่ายรูปและส่งงานที่ “หน้าบ้าน” หลังที่ประกาศขายเท่านั้น ถ้าสถานที่ในรูปไม่ตรงกับบ้านที่ประกาศขาย จะไม่ผ่านการพิจารณาค่ะ</p>
       <div class="actions">
-        <button class="btn" type="button" onclick="closeAnnouncement()">รับทราบ</button>
+        <button class="btn" type="button" onclick="hideModal('announceModal')">รับทราบ</button>
       </div>
     </div>
   </div>
 
-  <!-- Success Popup -->
+  <!-- Camera Modal -->
+  <div id="cameraModal" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="camTitle">ถ่ายรูป</h3>
+
+      <video id="camVideo" playsinline autoplay muted></video>
+      <img id="camShot" />
+      <canvas id="camCanvas" style="display:none"></canvas>
+
+      <div class="camHint" id="camHint">กำลังเปิดกล้อง...</div>
+
+      <!-- ✅ แถว 1: ถ่าย + ถ่ายใหม่ -->
+      <div class="camRow">
+        <button class="btn2" type="button" id="btnCapture" onclick="captureShot()" disabled>ถ่าย</button>
+        <button class="btnGhost" type="button" id="btnRetake" onclick="retakeShot()" disabled>ถ่ายใหม่</button>
+      </div>
+
+      <!-- ✅ แถว 2: ตกลง(เขียว) + ปิด -->
+      <div class="camRow">
+        <button class="btnOk" type="button" id="btnUse" onclick="useShot()" disabled>ตกลง</button>
+        <button class="btnDanger" type="button" onclick="closeCamera()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success -->
   <div id="successModal" class="modal-backdrop">
     <div class="modal">
       <h3>ส่งข้อมูลสำเร็จ</h3>
@@ -166,7 +165,7 @@
     </div>
   </div>
 
-  <!-- Progress Popup -->
+  <!-- Progress -->
   <div id="progressModal" class="progress-backdrop">
     <div class="progress-sheet">
       <div class="progress-top">
@@ -183,256 +182,328 @@
   const BACKEND_URL = "https://script.google.com/macros/s/AKfycby8gbWx0N_DAy_FO4sPyiXREl08LeqJSWBNxazJZupssyYC-JhRC3qzDn8I-t_jMb26/exec";
   const PROGRESS_TEXT = "กำลังส่งข้อมูลไปยังระบบ...";
 
+  const MAX_SIDE = 960;
+  const JPEG_QUALITY = 0.70;
+
   let profile = null;
 
-  function showAnnouncement() {
-    document.getElementById("announceModal").style.display = "flex";
+  // เก็บ dataUrl ที่ถ่ายแล้ว
+  const captured = { front_house:null, notice_sign:null, house_no:null, additional1:null, additional2:null };
+  const previewEl = { front_house:"p1", house_no:"p2", notice_sign:"p3", additional1:"p4", additional2:"p5" };
+  const titleMap = { front_house:"รูปหน้าบ้าน", notice_sign:"รูปป้ายประกาศ", house_no:"รูปบ้านเลขที่", additional1:"รูปเพิ่มเติม 1", additional2:"รูปเพิ่มเติม 2" };
+
+  // camera state
+  let currentSlot = null;
+  let stream = null;        // ✅ เก็บ stream ไว้ตลอดรอบการเปิดฟอร์ม
+  let shotDataUrl = null;
+
+  function showModal(id){ document.getElementById(id).style.display="flex"; }
+  function hideModal(id){ document.getElementById(id).style.display="none"; }
+
+  function showProgress(pct){
+    const modal=document.getElementById("progressModal");
+    const bar=document.getElementById("progressBar");
+    const p=document.getElementById("progressPct");
+    const t=document.getElementById("progressText");
+    modal.style.display="flex";
+    t.textContent=PROGRESS_TEXT;
+    bar.value=Math.max(0,Math.min(100,pct));
+    p.textContent=`${Math.round(bar.value)}%`;
   }
-  function closeAnnouncement() {
-    document.getElementById("announceModal").style.display = "none";
-  }
+  function hideProgress(){ hideModal("progressModal"); }
 
-  function focusTo(el, msg) {
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(() => { try { el.focus({ preventScroll:true }); } catch(e) { try{el.focus();}catch(_){}} }, 200);
-
-    const prev = el.style.borderColor;
-    el.style.borderColor = "#b91c1c";
-    el.style.boxShadow = "0 0 0 3px rgba(185,28,28,.15)";
-    setTimeout(() => {
-      el.style.borderColor = prev || "#ccc";
-      el.style.boxShadow = "";
-    }, 1800);
-
-    if (msg) {
-      const result = document.getElementById("result");
-      if (result) result.innerHTML = `<span class="err">${msg}</span>`;
+  function focusTo(el,msg){
+    if(!el) return;
+    el.scrollIntoView({behavior:"smooth",block:"center"});
+    setTimeout(()=>{ try{el.focus({preventScroll:true})}catch(e){ try{el.focus()}catch(_){}} },200);
+    const prev=el.style.borderColor;
+    el.style.borderColor="#b91c1c";
+    el.style.boxShadow="0 0 0 3px rgba(185,28,28,.15)";
+    setTimeout(()=>{ el.style.borderColor=prev||"#ccc"; el.style.boxShadow=""; },1800);
+    if(msg){
+      const result=document.getElementById("result");
+      if(result) result.innerHTML=`<span class="err">${msg}</span>`;
     }
   }
-  function focusToFile(inputEl, msg){ focusTo(inputEl, msg); }
 
-  function showProgress(pct) {
-    const modal = document.getElementById("progressModal");
-    const bar = document.getElementById("progressBar");
-    const p = document.getElementById("progressPct");
-    const t = document.getElementById("progressText");
-    modal.style.display = "flex";
-    t.textContent = PROGRESS_TEXT;
-    bar.value = Math.max(0, Math.min(100, pct));
-    p.textContent = `${Math.round(bar.value)}%`;
-  }
-  function hideProgress() {
-    document.getElementById("progressModal").style.display = "none";
-  }
-
-  function bindPreview(inputId, imgId) {
-    const input = document.getElementById(inputId);
-    const img = document.getElementById(imgId);
-    input.addEventListener("change", () => {
-      if (!input.files || !input.files[0]) { img.style.display="none"; return; }
-      const url = URL.createObjectURL(input.files[0]);
-      img.src = url;
-      img.style.display = "block";
-    });
-  }
-
-  function getLocation() {
-    const msg = document.getElementById("locMsg");
-    msg.textContent = "กำลังขอพิกัด...";
-
-    if (!navigator.geolocation) {
-      msg.innerHTML = `<span class="err">อุปกรณ์/บราวเซอร์ไม่รองรับการดึงพิกัด</span>`;
+  function getLocation(){
+    const msg=document.getElementById("locMsg");
+    msg.textContent="กำลังขอพิกัด...";
+    if(!navigator.geolocation){
+      msg.innerHTML=`<span class="err">อุปกรณ์/บราวเซอร์ไม่รองรับการดึงพิกัด</span>`;
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        document.getElementById("lat").value = pos.coords.latitude;
-        document.getElementById("lng").value = pos.coords.longitude;
-        msg.innerHTML = `<span class="ok">ได้พิกัดแล้ว</span>`;
+      (pos)=>{
+        document.getElementById("lat").value=pos.coords.latitude;
+        document.getElementById("lng").value=pos.coords.longitude;
+        msg.innerHTML=`<span class="ok">ได้พิกัดแล้ว</span>`;
       },
-      (err) => {
-        let extra = "";
-        if (err.code === 1) extra = " (ไม่ได้อนุญาต Location ให้ LINE/เว็บนี้)";
-        if (err.code === 2) extra = " (หาสัญญาณ GPS ไม่เจอ ลองออกไปที่โล่ง/เปิด GPS)";
-        if (err.code === 3) extra = " (Timeout ลองใหม่อีกครั้ง)";
-        msg.innerHTML = `<span class="err">ดึงพิกัดไม่สำเร็จ: ${err.message}${extra}</span>`;
+      (err)=>{
+        let extra="";
+        if(err.code===1) extra=" (ไม่ได้อนุญาต Location ให้ LINE/เว็บนี้)";
+        if(err.code===2) extra=" (หาสัญญาณ GPS ไม่เจอ ลองออกไปที่โล่ง/เปิด GPS)";
+        if(err.code===3) extra=" (Timeout ลองใหม่อีกครั้ง)";
+        msg.innerHTML=`<span class="err">ดึงพิกัดไม่สำเร็จ: ${err.message}${extra}</span>`;
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+      {enableHighAccuracy:true,timeout:20000,maximumAge:0}
     );
   }
 
-  function isHeicFile(file){
-    if (!file) return false;
-    const t = (file.type || "").toLowerCase();
-    const n = (file.name || "").toLowerCase();
-    return t.includes("heic") || t.includes("heif") || n.endsWith(".heic") || n.endsWith(".heif");
-  }
+  // ---------- Camera (เด้ง permission ครั้งเดียวต่อการเปิดฟอร์ม) ----------
+  async function openCamera(slot){
+    currentSlot = slot;
+    shotDataUrl = null;
 
-  async function convertHeicToJpegFile(file){
-    if (typeof heic2any === "undefined") throw new Error("ไม่พบไลบรารีแปลง HEIC (heic2any)");
-    const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
-    const blob = Array.isArray(out) ? out[0] : out;
-    const newName = (file.name || "image").replace(/\.(heic|heif)$/i, ".jpg");
-    return new File([blob], newName, { type: "image/jpeg" });
-  }
+    document.getElementById("camTitle").textContent = "ถ่าย" + (titleMap[slot] || "รูป");
+    document.getElementById("camHint").textContent = "กำลังเปิดกล้อง...";
 
-  async function resizeImageToDataUrl(file, maxSide = 960, quality = 0.70) {
-    if (isHeicFile(file)) {
-      showProgress(20);
-      file = await convertHeicToJpegFile(file);
+    // reset UI
+    document.getElementById("camShot").style.display="none";
+    document.getElementById("camShot").src="";
+    document.getElementById("camVideo").style.display="block";
+
+    document.getElementById("btnCapture").disabled=true;
+    document.getElementById("btnUse").disabled=true;
+    document.getElementById("btnRetake").disabled=true;
+
+    showModal("cameraModal");
+
+    try{
+      if(!stream){
+        await startCamera_(); // ✅ ขอ permission แค่ครั้งแรก
+      }else{
+        // ✅ ใช้ stream เดิม ไม่ขอ permission ใหม่
+        const video=document.getElementById("camVideo");
+        video.srcObject = stream;
+        await video.play();
+      }
+      document.getElementById("camHint").textContent="กด “ถ่าย” เพื่อจับภาพ";
+      document.getElementById("btnCapture").disabled=false;
+    }catch(e){
+      document.getElementById("camHint").innerHTML =
+        `<span class="err">เปิดกล้องไม่สำเร็จ: ${escapeHtml_(e.message||e)}<br>แนะนำ: อนุญาต Camera ให้ LINE / เปิดจาก Rich Menu</span>`;
     }
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-    const nw = Math.round(bitmap.width * scale);
-    const nh = Math.round(bitmap.height * scale);
-
-    const canvas = document.createElement("canvas");
-    canvas.width = nw; canvas.height = nh;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(bitmap, 0, 0, nw, nh);
-
-    return canvas.toDataURL("image/jpeg", quality);
   }
 
-  async function submitForm() {
-    const result = document.getElementById("result");
-    const btn = document.getElementById("submitBtn");
-    result.textContent = "";
-    btn.disabled = true;
+  async function startCamera_(){
+    // ไม่ stop กล้องในแต่ละช่อง (กันเด้ง permission)
+    const video = document.getElementById("camVideo");
+    if(!navigator.mediaDevices?.getUserMedia) throw new Error("ไม่รองรับกล้องใน WebView นี้");
 
-    try {
-      if (!profile || !profile.userId) {
-        btn.disabled = false;
+    video.muted = true;
+    video.setAttribute("playsinline","");
+
+    // พยายามใช้กล้องหลัง
+    const tryList = [
+      { audio:false, video:{ facingMode:{ exact:"environment" } } },
+      { audio:false, video:{ facingMode:{ ideal:"environment" } } },
+      { audio:false, video:true }
+    ];
+
+    let lastErr=null;
+    for(const c of tryList){
+      try{
+        stream = await navigator.mediaDevices.getUserMedia(c);
+        break;
+      }catch(err){ lastErr=err; }
+    }
+    if(!stream) throw lastErr || new Error("ไม่สามารถเปิดกล้องได้");
+
+    video.srcObject = stream;
+    await video.play();
+  }
+
+  function closeCamera(){
+    // ✅ ไม่ stop stream เพื่อไม่ให้ permission เด้งทุกครั้ง
+    hideModal("cameraModal");
+  }
+
+  function stopCameraHard_(){
+    const video=document.getElementById("camVideo");
+    try{ video.pause(); }catch(e){}
+    try{ video.srcObject=null; }catch(e){}
+    if(stream){
+      stream.getTracks().forEach(t=>{ try{t.stop()}catch(e){} });
+      stream=null;
+    }
+  }
+
+  function captureShot(){
+    const video=document.getElementById("camVideo");
+    if(!video || video.videoWidth===0 || video.videoHeight===0){
+      document.getElementById("camHint").innerHTML=`<span class="err">กล้องยังไม่พร้อม ลองใหม่อีกครั้ง</span>`;
+      return;
+    }
+
+    const canvas=document.getElementById("camCanvas");
+    canvas.width=video.videoWidth;
+    canvas.height=video.videoHeight;
+    const ctx=canvas.getContext("2d");
+    ctx.drawImage(video,0,0);
+
+    shotDataUrl = resizeCanvasToJpeg_(canvas, MAX_SIDE, JPEG_QUALITY);
+
+    document.getElementById("camShot").src = shotDataUrl;
+    document.getElementById("camShot").style.display="block";
+    document.getElementById("camVideo").style.display="none";
+
+    document.getElementById("camHint").textContent="ตรวจสอบภาพ แล้วกด “ตกลง” หรือ “ถ่ายใหม่”";
+    document.getElementById("btnCapture").disabled=true;
+    document.getElementById("btnUse").disabled=false;
+    document.getElementById("btnRetake").disabled=false;
+  }
+
+  function retakeShot(){
+    shotDataUrl=null;
+    document.getElementById("camShot").src="";
+    document.getElementById("camShot").style.display="none";
+    document.getElementById("camVideo").style.display="block";
+
+    document.getElementById("camHint").textContent="กด “ถ่าย” เพื่อจับภาพ";
+    document.getElementById("btnCapture").disabled=false;
+    document.getElementById("btnUse").disabled=true;
+    document.getElementById("btnRetake").disabled=true;
+  }
+
+  function useShot(){
+    if(!currentSlot || !shotDataUrl) return;
+
+    captured[currentSlot]=shotDataUrl;
+
+    const pid=previewEl[currentSlot];
+    const img=document.getElementById(pid);
+    img.src=shotDataUrl;
+    img.style.display="block";
+
+    closeCamera();
+  }
+
+  function resizeCanvasToJpeg_(srcCanvas, maxSide, quality){
+    const w=srcCanvas.width, h=srcCanvas.height;
+    const scale=Math.min(1, maxSide/Math.max(w,h));
+    const nw=Math.round(w*scale), nh=Math.round(h*scale);
+    const out=document.createElement("canvas");
+    out.width=nw; out.height=nh;
+    out.getContext("2d").drawImage(srcCanvas,0,0,nw,nh);
+    return out.toDataURL("image/jpeg", quality);
+  }
+
+  function escapeHtml_(s){
+    return String(s||"").replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+
+  // ---------- Submit ----------
+  async function submitForm(){
+    const result=document.getElementById("result");
+    const btn=document.getElementById("submitBtn");
+    result.textContent="";
+    btn.disabled=true;
+
+    try{
+      if(!profile?.userId){
+        btn.disabled=false;
         throw new Error("ยังดึงโปรไฟล์ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดจาก Rich Menu อีกครั้ง");
       }
 
-      const projectEl = document.getElementById("projectName");
-      const typeEl = document.getElementById("assetType");
-      const latEl = document.getElementById("lat");
-      const lngEl = document.getElementById("lng");
+      const projectEl=document.getElementById("projectName");
+      const typeEl=document.getElementById("assetType");
+      const latEl=document.getElementById("lat");
+      const lngEl=document.getElementById("lng");
 
-      const img1El = document.getElementById("img1");
-      const img2El = document.getElementById("img2");
-      const img3El = document.getElementById("img3");
-
-      // ✅ เพิ่มใหม่
-      const img4El = document.getElementById("img4");
-      const img5El = document.getElementById("img5");
-
-      const projectName = (projectEl.value || "").trim();
-      if (!projectName) { btn.disabled = false; focusTo(projectEl, "กรุณากรอกชื่อโครงการ/หมู่บ้าน"); return; }
-      if (!typeEl.value) { btn.disabled = false; focusTo(typeEl, "กรุณาเลือกประเภททรัพย์"); return; }
-      if (!latEl.value || !lngEl.value) {
-        btn.disabled = false;
-        const locBtn = document.querySelector('button.btn2');
-        focusTo(locBtn || latEl, "กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
+      const projectName=(projectEl.value||"").trim();
+      if(!projectName){ btn.disabled=false; focusTo(projectEl,"กรุณากรอกชื่อโครงการ/หมู่บ้าน"); return; }
+      if(!typeEl.value){ btn.disabled=false; focusTo(typeEl,"กรุณาเลือกประเภททรัพย์"); return; }
+      if(!latEl.value || !lngEl.value){
+        btn.disabled=false;
+        const locBtn=document.querySelector('button.btn2');
+        focusTo(locBtn||latEl,"กรุณาดึงพิกัดก่อน (หรือรอให้ดึงอัตโนมัติสำเร็จ)");
         return;
       }
 
-      const f1 = img1El.files[0];
-      if (!f1) { btn.disabled = false; focusToFile(img1El, "กรุณาแนบรูปหน้าบ้าน"); return; }
-
-      const f3 = img3El.files[0];
-      if (!f3) { btn.disabled = false; focusToFile(img3El, "กรุณาแนบรูปป้ายประกาศ"); return; }
-
-      const f2 = img2El.files[0] || null;
-      const f4 = img4El.files[0] || null; // ✅ เพิ่มใหม่
-      const f5 = img5El.files[0] || null; // ✅ เพิ่มใหม่
+      if(!captured.front_house){ btn.disabled=false; focusTo(document.getElementById("btn_front"),"กรุณาถ่ายรูปหน้าบ้าน"); return; }
+      if(!captured.notice_sign){ btn.disabled=false; focusTo(document.getElementById("btn_notice"),"กรุณาถ่ายรูปป้ายประกาศ"); return; }
 
       showProgress(5);
-      showProgress(15);
-
-      const pFront   = resizeImageToDataUrl(f1, 960, 0.70);
-      const pNotice  = resizeImageToDataUrl(f3, 960, 0.70);
-      const pHouseNo = f2 ? resizeImageToDataUrl(f2, 960, 0.70) : Promise.resolve(null);
-
-      // ✅ เพิ่มใหม่
-      const pAdd1    = f4 ? resizeImageToDataUrl(f4, 960, 0.70) : Promise.resolve(null);
-      const pAdd2    = f5 ? resizeImageToDataUrl(f5, 960, 0.70) : Promise.resolve(null);
-
-      showProgress(35);
-
-      // ✅ เพิ่ม d4,d5
-      const [d1, d3, d2, d4, d5] = await Promise.all([pFront, pNotice, pHouseNo, pAdd1, pAdd2]);
-
       showProgress(75);
 
       const images = [
-        { label: "front_house", dataUrl: d1 },
-        ...(d2 ? [{ label: "house_no", dataUrl: d2 }] : []),
-        { label: "notice_sign", dataUrl: d3 },
-        ...(d4 ? [{ label: "additional1", dataUrl: d4 }] : []), // ✅ เพิ่มใหม่
-        ...(d5 ? [{ label: "additional2", dataUrl: d5 }] : []), // ✅ เพิ่มใหม่
+        { label:"front_house", dataUrl: captured.front_house },
+        ...(captured.house_no ? [{ label:"house_no", dataUrl: captured.house_no }] : []),
+        { label:"notice_sign", dataUrl: captured.notice_sign },
+        ...(captured.additional1 ? [{ label:"additional1", dataUrl: captured.additional1 }] : []),
+        ...(captured.additional2 ? [{ label:"additional2", dataUrl: captured.additional2 }] : []),
       ];
 
       showProgress(85);
 
       const payload = {
         projectName,
-        houseText: (document.getElementById("houseText").value || "").trim(),
-        assetType: typeEl.value,
-        latitude: Number(latEl.value),
-        longitude: Number(lngEl.value),
-        lineUserId: profile.userId,
-        lineDisplayName: profile.displayName || "",
+        houseText:(document.getElementById("houseText").value||"").trim(),
+        assetType:typeEl.value,
+        latitude:Number(latEl.value),
+        longitude:Number(lngEl.value),
+        lineUserId:profile.userId,
+        lineDisplayName:profile.displayName||"",
         images
       };
 
       showProgress(90);
 
-      const res = await fetch(BACKEND_URL, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(BACKEND_URL, { method:"POST", body: JSON.stringify(payload) });
 
       showProgress(95);
 
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
+      if(!json.ok) throw new Error(json.error || "ส่งไม่สำเร็จ");
 
       showProgress(100);
-      setTimeout(() => {
+      setTimeout(()=>{
         hideProgress();
-        showSuccessModal("ระบบบันทึกข้อมูลเรียบร้อยแล้ว กดตกลงเพื่อปิดหน้าจอ");
-        btn.disabled = false;
-      }, 350);
+        showModal("successModal");
+        btn.disabled=false;
+        // ✅ ส่งสำเร็จค่อย stop กล้องจริง
+        stopCameraHard_();
+      },350);
 
-    } catch (e) {
+    }catch(e){
       hideProgress();
-      result.innerHTML = `<span class="err">${e.message || e}</span>`;
-      btn.disabled = false;
+      result.innerHTML=`<span class="err">${e.message||e}</span>`;
+      btn.disabled=false;
     }
   }
 
-  function showSuccessModal(message) {
-    const modal = document.getElementById("successModal");
-    const msgEl = document.getElementById("successMsg");
-    msgEl.textContent = message || "ระบบบันทึกข้อมูลเรียบร้อยแล้ว";
-    modal.style.display = "flex";
-  }
-
-  function closeLiff() {
-    if (typeof liff !== "undefined" && liff.isInClient && liff.isInClient()) {
+  function closeLiff(){
+    // ✅ ออกจากหน้าให้ stop กล้องจริง
+    stopCameraHard_();
+    if(typeof liff!=="undefined" && liff.isInClient && liff.isInClient()){
       liff.closeWindow();
-    } else {
+    }else{
       window.close();
     }
   }
 
-  async function init() {
-    const whoEl = document.getElementById("who");
-    try {
-      whoEl.textContent = "กำลังเริ่ม LIFF...";
+  // กันหลุดไป background แล้วกล้องค้าง
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.hidden){
+      // ไม่จำเป็นต้อง stop ทุกครั้ง แต่กันค้างในบางรุ่น
+      // stopCameraHard_();
+    }
+  });
+
+  // ---------- LIFF init ----------
+  async function init(){
+    const whoEl=document.getElementById("who");
+    try{
+      whoEl.textContent="กำลังเริ่ม LIFF...";
       await liff.init({ liffId: LIFF_ID });
 
-      if (!liff.isInClient()) {
-        whoEl.innerHTML = `<span class="err">ลิงก์นี้ต้องเปิดใน LINE เท่านั้น</span>`;
+      if(!liff.isInClient()){
+        whoEl.innerHTML=`<span class="err">ลิงก์นี้ต้องเปิดใน LINE เท่านั้น</span>`;
         return;
       }
-      if (!liff.isLoggedIn()) {
-        whoEl.textContent = "กำลังเข้าสู่ระบบ LINE...";
+      if(!liff.isLoggedIn()){
+        whoEl.textContent="กำลังเข้าสู่ระบบ LINE...";
         liff.login();
         return;
       }
@@ -441,21 +512,14 @@
       whoEl.textContent = profile.displayName || "(ไม่มีชื่อ)";
       document.getElementById("uid").textContent = profile.userId || "";
 
-      bindPreview("img1","p1");
-      bindPreview("img2","p2");
-      bindPreview("img3","p3");
-      bindPreview("img4","p4"); // ✅ เพิ่มใหม่
-      bindPreview("img5","p5"); // ✅ เพิ่มใหม่
-
-      showAnnouncement();
+      showModal("announceModal");
       getLocation();
 
-    } catch (e) {
-      whoEl.innerHTML = `<span class="err">LIFF error: ${e.message || e}</span>`;
+    }catch(e){
+      whoEl.innerHTML=`<span class="err">LIFF error: ${escapeHtml_(e.message||e)}</span>`;
       console.error(e);
     }
   }
-
   init();
 </script>
 </body>
